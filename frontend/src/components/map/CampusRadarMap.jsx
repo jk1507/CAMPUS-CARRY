@@ -1,4 +1,18 @@
 import React, { useEffect, useRef, useState } from 'react';
+import {
+  Compass,
+  Navigation,
+  Crosshair,
+  MapPin,
+  ExternalLink,
+  Users,
+  Footprints,
+  Check,
+  Bike,
+  Package,
+  Layers,
+  Radio
+} from 'lucide-react';
 import useAuthStore from '../../store/authStore.js';
 import useRequestStore from '../../store/requestStore.js';
 import { getSocket } from '../../socket/socket.js';
@@ -37,7 +51,6 @@ export default function CampusRadarMap() {
   const [isBroadcasting, setIsBroadcasting] = useState(false);
   const [activePeers, setActivePeers] = useState({});
   const [selectedItem, setSelectedItem] = useState(null);
-  const [activeTab, setActiveTab] = useState('missions'); // 'missions' | 'radar'
   const [routeInfo, setRouteInfo] = useState(null);
   const [isDrawingRoute, setIsDrawingRoute] = useState(false);
   const watchIdRef = useRef(null);
@@ -125,11 +138,11 @@ export default function CampusRadarMap() {
       className: '',
       html: `
         <div style="position:relative;display:flex;align-items:center;justify-content:center;">
-          <div style="position:absolute;width:44px;height:44px;border-radius:50%;background:rgba(139,92,246,0.3);animation:pulseGlow 2s infinite;"></div>
-          <div style="width:26px;height:26px;border-radius:50%;background:#8b5cf6;border:3px solid white;box-shadow:0 0 16px rgba(139,92,246,0.8);display:flex;align-items:center;justify-content:center;color:white;font-size:12px;font-weight:bold;">
+          <div style="position:absolute;width:44px;height:44px;border-radius:50%;background:rgba(255,87,34,0.3);animation:ping 2s infinite;"></div>
+          <div style="width:26px;height:26px;border-radius:50%;background:#ff5722;border:3px solid white;box-shadow:0 0 16px rgba(255,87,34,0.8);display:flex;align-items:center;justify-content:center;color:white;font-size:12px;font-weight:bold;">
             👤
           </div>
-          <div style="position:absolute;top:-22px;background:#030712;color:#c4b5fd;font-weight:700;font-size:10px;padding:2px 8px;border-radius:6px;border:1px solid #8b5cf6;white-space:nowrap;box-shadow:0 4px 10px rgba(0,0,0,0.5);">
+          <div style="position:absolute;top:-22px;background:#1a1c23;color:#ff8a65;font-weight:700;font-size:10px;padding:2px 8px;border-radius:6px;border:1px solid #ff5722;white-space:nowrap;box-shadow:0 4px 10px rgba(0,0,0,0.5);">
             You (${user?.name?.split(' ')[0] || 'Me'})
           </div>
         </div>
@@ -156,7 +169,6 @@ export default function CampusRadarMap() {
     } catch (e) {
       console.warn('Geocoding error', e);
     }
-    // Fallback: slight random delta near user or default campus center
     const baseLat = myCoords ? myCoords.lat : 17.7288;
     const baseLng = myCoords ? myCoords.lng : 83.3175;
     return {
@@ -194,7 +206,7 @@ export default function CampusRadarMap() {
           <div style="background:#10b981;color:white;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(16,185,129,0.7);border:2px solid white;font-size:16px;">
             📍
           </div>
-          <div style="position:absolute;bottom:-20px;background:#030712;color:#10b981;font-weight:700;font-size:10px;padding:2px 6px;border-radius:4px;border:1px solid #10b981;white-space:nowrap;">
+          <div style="position:absolute;bottom:-20px;background:#1a1c23;color:#10b981;font-weight:700;font-size:10px;padding:2px 6px;border-radius:4px;border:1px solid #10b981;white-space:nowrap;">
             Pickup
           </div>
         </div>
@@ -207,10 +219,10 @@ export default function CampusRadarMap() {
       className: '',
       html: `
         <div style="position:relative;display:flex;align-items:center;justify-content:center;">
-          <div style="background:#8b5cf6;color:white;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(139,92,246,0.7);border:2px solid white;font-size:16px;">
+          <div style="background:#ff5722;color:white;width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(255,87,34,0.7);border:2px solid white;font-size:16px;">
             🏁
           </div>
-          <div style="position:absolute;bottom:-20px;background:#030712;color:#c4b5fd;font-weight:700;font-size:10px;padding:2px 6px;border-radius:4px;border:1px solid #8b5cf6;white-space:nowrap;">
+          <div style="position:absolute;bottom:-20px;background:#1a1c23;color:#ff8a65;font-weight:700;font-size:10px;padding:2px 6px;border-radius:4px;border:1px solid #ff5722;white-space:nowrap;">
             Dropoff
           </div>
         </div>
@@ -249,7 +261,7 @@ export default function CampusRadarMap() {
 
     // Polyline
     activeRoutePolylineRef.current = L.polyline(routePoints, {
-      color: '#8b5cf6',
+      color: '#ff5722',
       weight: 5,
       opacity: 0.9,
       lineCap: 'round',
@@ -265,7 +277,7 @@ export default function CampusRadarMap() {
     );
 
     setIsDrawingRoute(false);
-    toast.success(`📍 Directions plotted on map for: ${request.title}`);
+    toast.success(`📍 Directions plotted for: ${request.title}`);
   };
 
   // Toggle Live Broadcast
@@ -330,13 +342,13 @@ export default function CampusRadarMap() {
             <div style="position:relative;display:flex;align-items:center;justify-content:center;">
               <div style="position:absolute;width:40px;height:40px;border-radius:50%;background:${
                 isPeerCarrier ? 'rgba(59,130,246,0.3)' : 'rgba(16,185,129,0.3)'
-              };animation:pulseGlow 2.5s infinite;"></div>
+              };animation:ping 2.5s infinite;"></div>
               <div style="width:28px;height:28px;border-radius:50%;background:${
                 isPeerCarrier ? '#3b82f6' : '#10b981'
               };border:2px solid white;box-shadow:0 0 14px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;font-size:14px;">
                 ${isPeerCarrier ? '🛵' : '📦'}
               </div>
-              <div style="position:absolute;top:-22px;background:#030712;color:${
+              <div style="position:absolute;top:-22px;background:#1a1c23;color:${
                 isPeerCarrier ? '#93c5fd' : '#a7f3d0'
               };font-weight:700;font-size:10px;padding:2px 8px;border-radius:6px;border:1px solid ${
             isPeerCarrier ? '#3b82f6' : '#10b981'
@@ -375,43 +387,43 @@ export default function CampusRadarMap() {
   const displayList = activeRole === 'carrier' ? feed : myRequests;
 
   return (
-    <div className="space-y-4 pb-12 flex flex-col h-full">
+    <div className="space-y-4 pb-20 flex flex-col h-full">
       {/* Header Bar */}
-      <div className="p-4 sm:p-6 rounded-3xl bg-slate-900/90 border border-slate-800 shadow-xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+      <div className="card p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2 mb-1">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-            <span className="text-xs font-bold uppercase tracking-wider text-emerald-400">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span className="text-xs font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
               Live Campus Radar & Turn-by-Turn GPS
             </span>
           </div>
-          <h1 className="text-xl sm:text-2xl font-black text-white font-['Syne']">
+          <h1 className="text-xl sm:text-2xl font-black text-zipp-ink-900 tracking-tight font-heading">
             Directions & Mutual Live Tracking
           </h1>
-          <p className="text-xs text-slate-400 mt-0.5">
-            Click any request to view its visual path, walking distance, and open Google Maps navigation.
+          <p className="text-xs text-zipp-ink-500 mt-0.5">
+            Click any request to view its walking route and open Google Maps navigation.
           </p>
         </div>
 
         <div className="flex items-center gap-2 w-full sm:w-auto">
           <button
             onClick={toggleBroadcast}
-            className={`flex-1 sm:flex-none px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-md flex items-center justify-center gap-2 ${
+            className={`flex-1 sm:flex-none px-4 py-2.5 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center justify-center gap-2 ${
               isBroadcasting
-                ? 'bg-rose-500/20 text-rose-400 border border-rose-500/40 animate-pulse'
-                : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-600/30'
+                ? 'bg-rose-500/15 text-rose-600 border border-rose-500/30 animate-pulse'
+                : 'bg-zipp-primary text-white hover:bg-zipp-primary-dark shadow-zipp'
             }`}
           >
-            <span>{isBroadcasting ? '⏹' : '📍'}</span>
+            <Radio size={14} className={isBroadcasting ? 'animate-spin' : ''} />
             {isBroadcasting ? 'Stop Sharing' : 'Share Live GPS'}
           </button>
 
           <button
             onClick={handleRecenter}
-            className="p-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-semibold"
+            className="p-2.5 rounded-xl bg-zipp-ink-100 hover:bg-zipp-ink-200 text-zipp-ink-800 border border-zipp-ink-200 text-xs font-semibold"
             title="Re-center on my position"
           >
-            🎯
+            <Crosshair size={16} />
           </button>
         </div>
       </div>
@@ -419,35 +431,37 @@ export default function CampusRadarMap() {
       {/* Main Grid: Interactive Map + Delivery Directions Selector */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         {/* Map Canvas (2 Columns on Desktop) */}
-        <div className="lg:col-span-2 relative min-h-[420px] sm:min-h-[500px] rounded-3xl overflow-hidden border border-slate-800 shadow-2xl bg-slate-950">
+        <div className="lg:col-span-2 relative min-h-[380px] sm:min-h-[480px] rounded-3xl overflow-hidden border border-zipp-ink-200 shadow-soft bg-zipp-surface">
           <div ref={mapContainerRef} className="w-full h-full z-0" />
 
           {/* Route Info Badge (Distance & Walking Time) */}
           {routeInfo && (
-            <div className="absolute top-4 left-4 z-[400] bg-slate-950/90 backdrop-blur-md px-4 py-2.5 rounded-2xl border border-purple-500/40 shadow-xl text-xs flex items-center gap-3">
-              <span className="p-1 rounded-lg bg-purple-500/20 text-purple-400 text-sm">🚶</span>
+            <div className="absolute top-4 left-4 z-[400] bg-zipp-surface/95 backdrop-blur-md px-3.5 py-2 rounded-2xl border border-zipp-primary/30 shadow-card text-xs flex items-center gap-2.5">
+              <span className="p-1.5 rounded-lg bg-zipp-primary/10 text-zipp-primary text-xs">
+                <Footprints size={14} />
+              </span>
               <div>
-                <span className="text-white font-bold block">{routeInfo.distance}</span>
-                <span className="text-[11px] text-purple-300">{routeInfo.duration}</span>
+                <span className="text-zipp-ink-900 font-bold block">{routeInfo.distance}</span>
+                <span className="text-[11px] text-zipp-primary font-medium">{routeInfo.duration}</span>
               </div>
             </div>
           )}
 
           {/* Active Peers Counter */}
-          <div className="absolute top-4 right-4 z-[400] bg-slate-950/85 backdrop-blur-md px-3 py-1.5 rounded-xl border border-slate-800 text-[11px] text-slate-300 flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-blue-400 animate-ping" />
-            <span>{Object.keys(activePeers).length} Peers Online</span>
+          <div className="absolute top-4 right-4 z-[400] bg-zipp-surface/90 backdrop-blur-md px-3 py-1.5 rounded-xl border border-zipp-ink-200 text-[11px] text-zipp-ink-700 flex items-center gap-2 shadow-soft">
+            <span className="w-2 h-2 rounded-full bg-blue-500 animate-ping" />
+            <span className="font-semibold">{Object.keys(activePeers).length} Peers Online</span>
           </div>
 
           {/* Selected Request Floating Google Maps Action Panel */}
           {selectedItem && (
-            <div className="absolute bottom-4 left-4 right-4 z-[400] p-4 rounded-2xl bg-slate-900/95 backdrop-blur-xl border border-purple-500/40 shadow-2xl space-y-3">
+            <div className="absolute bottom-4 left-4 right-4 z-[400] p-4 rounded-2xl bg-zipp-surface/95 backdrop-blur-xl border border-zipp-primary/30 shadow-card space-y-3">
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-purple-400 block">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-zipp-primary block">
                     Active Route Selected
                   </span>
-                  <h4 className="text-sm font-bold text-white line-clamp-1">{selectedItem.title}</h4>
+                  <h4 className="text-sm font-bold text-zipp-ink-900 line-clamp-1">{selectedItem.title}</h4>
                 </div>
                 <button
                   onClick={() => {
@@ -460,20 +474,20 @@ export default function CampusRadarMap() {
                     routeMarkersRef.current.forEach((m) => mapInstanceRef.current?.removeLayer(m));
                     routeMarkersRef.current = [];
                   }}
-                  className="text-slate-400 hover:text-white p-1 text-xs font-bold"
+                  className="text-zipp-ink-400 hover:text-zipp-ink-800 p-1 text-xs font-bold"
                 >
                   ✕
                 </button>
               </div>
 
               <div className="grid grid-cols-2 gap-2 text-xs">
-                <div className="p-2 rounded-lg bg-slate-950/60 border border-slate-800/80">
-                  <span className="text-emerald-400 text-[10px] block font-semibold">📍 PICKUP</span>
-                  <span className="text-slate-200 truncate block">{selectedItem.pickup_location}</span>
+                <div className="p-2.5 rounded-xl bg-zipp-ink-50 border border-zipp-ink-100">
+                  <span className="text-emerald-600 text-[10px] block font-bold">PICKUP</span>
+                  <span className="text-zipp-ink-800 truncate block text-xs">{selectedItem.pickup_location}</span>
                 </div>
-                <div className="p-2 rounded-lg bg-slate-950/60 border border-slate-800/80">
-                  <span className="text-purple-400 text-[10px] block font-semibold">🏁 DROPOFF</span>
-                  <span className="text-slate-200 truncate block">{selectedItem.dropoff_location}</span>
+                <div className="p-2.5 rounded-xl bg-zipp-ink-50 border border-zipp-ink-100">
+                  <span className="text-zipp-primary text-[10px] block font-bold">DROPOFF</span>
+                  <span className="text-zipp-ink-800 truncate block text-xs">{selectedItem.dropoff_location}</span>
                 </div>
               </div>
 
@@ -484,17 +498,18 @@ export default function CampusRadarMap() {
                   )}&destination=${encodeURIComponent(selectedItem.dropoff_location)}`}
                   target="_blank"
                   rel="noreferrer"
-                  className="flex-1 py-2 px-3 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-md shadow-purple-600/30"
+                  className="flex-1 py-2 px-3 rounded-xl bg-zipp-primary hover:bg-zipp-primary-dark text-white font-bold text-xs flex items-center justify-center gap-2 transition-all shadow-sm"
                 >
-                  <span>🗺</span> Open Turn-by-Turn in Google Maps
+                  <Navigation size={13} />
+                  <span>Open in Google Maps</span>
                 </a>
 
                 {activeRole === 'carrier' && selectedItem.status === 'open' && (
                   <button
                     onClick={() => handleAcceptMission(selectedItem.id)}
-                    className="py-2 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1 transition-all"
+                    className="py-2 px-4 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs flex items-center gap-1.5 transition-all shadow-sm"
                   >
-                    <span>🛵</span> Accept (₹{selectedItem.reward})
+                    <Check size={14} /> Accept (₹{selectedItem.reward})
                   </button>
                 )}
               </div>
@@ -503,19 +518,19 @@ export default function CampusRadarMap() {
         </div>
 
         {/* Requests & Directions Picker Sidebar (1 Column on Desktop) */}
-        <div className="p-4 rounded-3xl bg-slate-900/80 border border-slate-800 flex flex-col gap-3 max-h-[500px] overflow-hidden">
-          <div className="flex items-center justify-between border-b border-slate-800/80 pb-2">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-300">
-              Campus Deliveries ({displayList.length})
+        <div className="p-4 rounded-3xl card flex flex-col gap-3 max-h-[480px] overflow-hidden">
+          <div className="flex items-center justify-between border-b border-zipp-ink-100 pb-2">
+            <span className="text-xs font-bold uppercase tracking-wider text-zipp-ink-500">
+              Deliveries ({displayList.length})
             </span>
-            <span className="text-[11px] text-purple-400">Click to plot route</span>
+            <span className="text-[11px] text-zipp-primary font-semibold">Click to plot route</span>
           </div>
 
           <div className="flex-1 overflow-y-auto space-y-2 pr-1">
             {displayList.length === 0 ? (
-              <div className="text-center py-16 text-slate-500 text-xs">
-                <span>📭</span>
-                <p className="mt-1">No requests right now.</p>
+              <div className="text-center py-16 text-zipp-ink-400 text-xs">
+                <Package size={28} className="mx-auto mb-2 opacity-50" />
+                <p>No requests right now.</p>
               </div>
             ) : (
               displayList.map((req) => {
@@ -526,28 +541,34 @@ export default function CampusRadarMap() {
                     onClick={() => drawRouteForRequest(req)}
                     className={`p-3 rounded-2xl border text-xs cursor-pointer transition-all ${
                       isSelected
-                        ? 'bg-purple-950/40 border-purple-500/60 shadow-lg'
-                        : 'bg-slate-950/60 hover:bg-slate-950 border-slate-800 hover:border-slate-700'
+                        ? 'bg-zipp-primary/10 border-zipp-primary/40 shadow-sm'
+                        : 'bg-zipp-surface hover:bg-zipp-ink-50 border-zipp-ink-200'
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2 mb-1">
-                      <span className="font-bold text-slate-100 truncate">{req.title}</span>
-                      <span className="text-purple-400 font-extrabold font-['Syne']">
+                      <span className="font-bold text-zipp-ink-900 truncate">{req.title}</span>
+                      <span className="text-zipp-primary font-extrabold font-heading text-sm">
                         ₹{req.reward}
                       </span>
                     </div>
 
-                    <div className="text-[11px] text-slate-400 space-y-0.5 mb-2">
-                      <div className="truncate">📍 {req.pickup_location}</div>
-                      <div className="truncate">🏁 {req.dropoff_location}</div>
+                    <div className="text-[11px] text-zipp-ink-500 space-y-0.5 mb-2">
+                      <div className="truncate flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0" />
+                        <span className="truncate">{req.pickup_location}</span>
+                      </div>
+                      <div className="truncate flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-zipp-primary shrink-0" />
+                        <span className="truncate">{req.dropoff_location}</span>
+                      </div>
                     </div>
 
-                    <div className="flex items-center justify-between text-[10px] pt-2 border-t border-slate-800/80 text-slate-400">
-                      <span className="uppercase font-semibold text-purple-300">
+                    <div className="flex items-center justify-between text-[10px] pt-2 border-t border-zipp-ink-100 text-zipp-ink-400">
+                      <span className="uppercase font-bold text-zipp-primary">
                         {req.status}
                       </span>
-                      <span className="text-purple-400 hover:underline font-semibold flex items-center gap-1">
-                        🗺 Show Route & Directions →
+                      <span className="text-zipp-primary hover:underline font-semibold flex items-center gap-1">
+                        Plot Route →
                       </span>
                     </div>
                   </div>

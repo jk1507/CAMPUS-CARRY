@@ -33,8 +33,17 @@ const useAuthStore = create(
 
       switchRole: (role) => set({ activeRole: role }),
       logout: () => set({ token: null, user: null, activeRole: null }),
+      theme: 'system', // 'system' | 'light' | 'dark'
+      setTheme: (theme) => {
+        set({ theme });
+        if (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+          document.documentElement.classList.add('dark');
+        } else {
+          document.documentElement.classList.remove('dark');
+        }
+      },
     }),
-    { name: 'cc-auth', partialize: s => ({ token: s.token, user: s.user, activeRole: s.activeRole }) }
+    { name: 'cc-auth', partialize: s => ({ token: s.token, user: s.user, activeRole: s.activeRole, theme: s.theme }) }
   )
 );
 

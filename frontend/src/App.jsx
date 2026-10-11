@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import useAuthStore from './store/authStore.js';
@@ -12,6 +12,18 @@ const PrivateRoute = ({ children }) => {
 };
 
 export default function App() {
+  const theme = useAuthStore((s) => s.theme);
+
+  useEffect(() => {
+    if (
+      theme === 'dark' ||
+      (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)
+    ) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [theme]);
   return (
     <BrowserRouter>
       <Toaster position="top-right" toastOptions={{

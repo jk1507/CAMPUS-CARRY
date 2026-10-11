@@ -1,77 +1,42 @@
-# CampusCarry 🛵
-> Peer-to-peer campus delivery platform — Forgot something? We've got it.
+# Zipp ⚡
+> Campus errands, moved in minutes. Fast, peer-to-peer student delivery platform.
 
-## Stack
-| Layer | Tech |
+## Overview
+**Zipp** connects students who need something delivered across campus with peers already walking that direction. Built mobile-first (360px–430px) with responsive desktop support, live radar mapping, walking directions, and real-time chat with photo proofs and 4-digit handover OTPs.
+
+## Tech Stack
+| Layer | Technologies |
 |---|---|
-| Frontend | React 18 + Vite + Tailwind + Framer Motion + Zustand |
-| Backend | Node.js + Express + Socket.io + JWT + Bcrypt + Winston |
-| Database | MySQL 8 |
-| Maps | OpenStreetMap via Leaflet.js (no API key needed) |
-| 3D Map | Three.js |
+| **Frontend** | React 18, Vite, Tailwind CSS, Framer Motion, Zustand, Lucide React |
+| **Backend** | Node.js, Express, Socket.io, JWT, Bcrypt, Winston |
+| **Database** | MySQL / PostgreSQL / Cloud Aiven Database |
+| **Maps & GPS** | Leaflet.js, OpenStreetMap, OSRM Walking Engine, Web Geolocation |
+
+---
 
 ## Quick Start
 
-### Step 1 — MySQL Setup
-Open MySQL Command Line Client and run:
-```sql
-source C:/path/to/campuscarry/database/schema.sql
-```
-
-### Option A — Docker (recommended)
-```bash
-cd cc
-cp .env.example .env
-# Edit .env: set DB_PASSWORD, JWT_SECRET, and optionally RAZORPAY_* keys
-docker compose up -d
-# → backend on http://localhost:4000
-# → frontend on http://localhost:5173
-```
-
-### Option B — Manual
-#### Backend
+### 1. Backend Setup
 ```bash
 cd backend
-cp .env.example .env
-# Edit .env: set DB_PASSWORD, JWT_SECRET, RAZORPAY_* keys
 npm install
 npm run dev
-# → running on http://localhost:4000
+# -> Server running on http://localhost:4000
 ```
 
-#### Frontend
+### 2. Frontend Setup
 ```bash
 cd frontend
 npm install
 npm run dev
-# → open http://localhost:5173
+# -> Zipp app running on http://localhost:5173
 ```
 
-## Environment Variables (backend/.env)
-```
-PORT=4000
-DB_HOST=localhost
-DB_PORT=3306
-DB_USER=root
-DB_PASSWORD=yourpassword
-DB_NAME=campuscarry
-JWT_SECRET=any_long_random_string
-JWT_EXPIRES_IN=7d
-FRONTEND_URL=http://localhost:5173
-```
+---
 
-## Features
-- ⚡ Real-time delivery feed (Socket.io)
-- 📍 Live GPS tracking on OpenStreetMap
-- 💬 Persistent in-app chat
-- 🛵 Role-based UI (requester / carrier)
-- ⭐ Mutual rating system
-- 📊 Earnings & spending dashboards with bar charts
-- 🗺 Interactive 3D campus map (Three.js)
-- 🆘 Help & complaint reporting
-- 🔐 JWT auth + Bcrypt passwords
-- 💸 Razorpay-powered UPI payout withdrawals
-- 🔔 Firebase Cloud Messaging (FCM) push notifications
-- ✅ Zod validation on all backend routes
-- 🐳 Docker + docker-compose (MySQL + backend + frontend)
-- 🛡️ Helmet + rate limiting + CSRF-ready middleware
+## Design System & Features
+- **Mobile-First UX**: Designed for standard phone viewports (360–430px) with bottom tab bar navigation and responsive desktop rails (≥768px).
+- **Zipp Identity**: Warm off-white light theme with refined dark mode, Plus Jakarta Sans typography, and semantic status color tokens.
+- **Requester Flow**: Multi-step interactive errand wizard, smart dynamic price estimator, live status tracking, and 4-digit completion OTP.
+- **Carrier Flow**: Live campus feed, instant accept, turn-by-turn Google Maps routing, wallet balance and UPI instant withdrawals.
+- **Safety**: 4-digit handover OTP protection, delivery photo proof uploads, and campus peer dispute reporting.

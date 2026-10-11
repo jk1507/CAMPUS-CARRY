@@ -1,17 +1,28 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { 
+  Package, 
+  MapPin, 
+  Navigation, 
+  IndianRupee, 
+  ArrowRight, 
+  ArrowLeft,
+  Sparkles,
+  Zap,
+  Info
+} from 'lucide-react';
 import useRequestStore from '../store/requestStore.js';
 import LocationPickerMap from './map/LocationPickerMap.jsx';
 import toast from 'react-hot-toast';
 
 const STEPS = [
-  { id: 0, title: 'Item Details', icon: '📦', desc: 'What needs to be moved?' },
-  { id: 1, title: 'Map & Route', icon: '📍', desc: 'Pick exact locations on the map' },
-  { id: 2, title: 'Reward & Time', icon: '💎', desc: 'Fair bounty for your carrier' },
+  { id: 0, title: 'Item Details', desc: 'What needs to be moved?' },
+  { id: 1, title: 'Map Geolocation', desc: 'Pick pickup & dropoff' },
+  { id: 2, title: 'Reward & Review', desc: 'Set tip and verify' },
 ];
 
-const PRESET_TAGS = ['🍔 Food / Canteen', '📚 Books / Notes', '📦 Courier / Parcel', '💊 Medicine', '🔑 Keys / ID Card'];
+const PRESET_TAGS = ['Canteen Food', 'Lab Manual / Notes', 'Amazon / Courier', 'Pharmacy Medicine', 'Hostel Keys'];
 
 export default function RequestWizard() {
   const [step, setStep] = useState(0);
@@ -23,20 +34,13 @@ export default function RequestWizard() {
     reward: '40',
     weight_kg: '0.5',
     deadline: '',
-    category: '🍔 Food / Canteen',
+    category: 'Canteen Food',
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { createRequest } = useRequestStore();
   const navigate = useNavigate();
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
-
-  const handleQuickTag = (tag) => {
-    set('category', tag);
-    if (!form.title) {
-      set('title', tag.split(' ').slice(1).join(' '));
-    }
-  };
 
   const handleSubmit = async () => {
     if (!form.title.trim()) return toast.error('Please enter what needs to be delivered');
@@ -47,7 +51,7 @@ export default function RequestWizard() {
     setIsSubmitting(true);
     try {
       const payload = {
-        title: `[${form.category.split(' ')[0]}] ${form.title.trim()}`,
+        title: `[${form.category}] ${form.title.trim()}`,
         description: form.description.trim() || undefined,
         pickup_location: form.pickup_location.trim(),
         dropoff_location: form.dropoff_location.trim(),
@@ -58,7 +62,7 @@ export default function RequestWizard() {
 
       const result = await createRequest(payload);
       if (result.success) {
-        toast.success('🎉 Delivery Request Created & Live on Campus!');
+        toast.success('🎉 Errand Broadcasted! Peers on campus can see it.');
         navigate('/app/mine');
       } else {
         toast.error(result.error || 'Failed to create request');
@@ -70,80 +74,55 @@ export default function RequestWizard() {
     }
   };
 
+  const recommendedReward = Math.max(30, Math.round(30 + Number(form.weight_kg || 0.5) * 20));
+
   return (
-    <div className="max-w-2xl mx-auto pb-12">
-      {/* Header */}
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <span className="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-purple-500/10 text-purple-400 border border-purple-500/20 mb-2 inline-block">
-            ⚡ Quick Errand Dispatch
+    <div className="pb-24 max-w-lg mx-auto">
+      {/* Stepper Bar */}
+      <div className="mb-5">
+        <div className="flex items-center justify-between mb-2">
+          <span className="text-xs font-black uppercase tracking-wider text-blue-600 dark:text-blue-400">
+            Step {step + 1} of 3
           </span>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-white font-['Syne'] tracking-tight">
-            Create Delivery Request
-          </h1>
-          <p className="text-slate-400 text-sm mt-1">
-            Student carriers on your campus will see this instantly and deliver it.
-          </p>
+          <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+            {STEPS[step].title}
+          </span>
+        </div>
+        {/* Progress Line */}
+        <div className="w-full h-1.5 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+          <div
+            className="h-full bg-blue-600 transition-all duration-300"
+            style={{ width: `${((step + 1) / 3) * 100}%` }}
+          />
         </div>
       </div>
 
-      {/* Modern Stepper Indicator */}
-      <div className="grid grid-cols-3 gap-2 sm:gap-4 mb-8">
-        {STEPS.map((s, i) => {
-          const isActive = step === i;
-          const isDone = step > i;
-          return (
-            <button
-              key={s.id}
-              type="button"
-              onClick={() => (isDone ? setStep(i) : null)}
-              className={`p-3 rounded-2xl border text-left transition-all ${
-                isActive
-                  ? 'bg-purple-950/40 border-purple-500/60 shadow-lg shadow-purple-950/50'
-                  : isDone
-                  ? 'bg-slate-900/60 border-emerald-500/40 cursor-pointer'
-                  : 'bg-slate-950/40 border-slate-800 opacity-60 cursor-not-allowed'
-              }`}
-            >
-              <div className="flex items-center gap-2 mb-1">
-                <span className="text-sm">{isDone ? '✅' : s.icon}</span>
-                <span className={`text-xs font-bold ${isActive ? 'text-purple-300' : isDone ? 'text-emerald-400' : 'text-slate-400'}`}>
-                  Step {i + 1}
-                </span>
-              </div>
-              <p className="text-xs font-semibold text-slate-200 hidden sm:block truncate">
-                {s.title}
-              </p>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Main Form Container */}
-      <div className="bg-slate-900/80 backdrop-blur-xl border border-slate-800 rounded-3xl p-6 sm:p-8 shadow-2xl">
+      {/* Wizard Content Card */}
+      <div className="bg-white dark:bg-[#111827] border border-slate-200/90 dark:border-slate-800 rounded-3xl p-5 sm:p-6 shadow-sm">
         <AnimatePresence mode="wait">
+          {/* Step 1: Details */}
           {step === 0 && (
             <motion.div
               key="step0"
-              initial={{ opacity: 0, x: 20 }}
+              initial={{ opacity: 0, x: 15 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="space-y-6"
+              exit={{ opacity: 0, x: -15 }}
+              className="space-y-4"
             >
               <div>
-                <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
+                <label className="block text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mb-2">
                   Category Tag
                 </label>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-1.5">
                   {PRESET_TAGS.map((t) => (
                     <button
                       key={t}
                       type="button"
-                      onClick={() => handleQuickTag(t)}
-                      className={`px-3 py-1.5 rounded-xl text-xs font-medium transition-all ${
+                      onClick={() => set('category', t)}
+                      className={`px-3 py-1.5 rounded-xl text-xs font-semibold transition-all ${
                         form.category === t
-                          ? 'bg-purple-600 text-white shadow-md shadow-purple-600/30'
-                          : 'bg-slate-800/80 text-slate-400 hover:text-slate-200 hover:bg-slate-700/80'
+                          ? 'bg-blue-600 text-white shadow-sm'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200'
                       }`}
                     >
                       {t}
@@ -153,22 +132,22 @@ export default function RequestWizard() {
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
-                  What item do you need? <span className="text-rose-400">*</span>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  What item do you need? <span className="text-rose-500">*</span>
                 </label>
                 <input
                   type="text"
                   value={form.title}
                   onChange={(e) => set('title', e.target.value)}
-                  placeholder="e.g. Masala Dosa from Canteen, Lab Manual, Blue Folder"
-                  className="w-full bg-slate-950/80 border border-slate-800 focus:border-purple-500 rounded-xl px-4 py-3 text-slate-100 placeholder-slate-500 text-sm focus:outline-none transition-all"
+                  placeholder="e.g. Masala Dosa, Blue Record Book, Amazon Parcel"
+                  className="w-full bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-blue-600 focus:ring-1 focus:ring-blue-600"
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
-                    Estimated Weight (kg)
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Weight (kg)
                   </label>
                   <input
                     type="number"
@@ -177,51 +156,55 @@ export default function RequestWizard() {
                     value={form.weight_kg}
                     onChange={(e) => set('weight_kg', e.target.value)}
                     placeholder="0.5"
-                    className="w-full bg-slate-950/80 border border-slate-800 focus:border-purple-500 rounded-xl px-4 py-3 text-slate-100 placeholder-slate-500 text-sm focus:outline-none transition-all"
+                    className="w-full bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl px-4 py-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-blue-600"
                   />
                 </div>
+
                 <div>
-                  <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
-                    Deliver Before (Optional)
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                    Deadline (Optional)
                   </label>
                   <input
                     type="datetime-local"
                     value={form.deadline}
                     onChange={(e) => set('deadline', e.target.value)}
-                    className="w-full bg-slate-950/80 border border-slate-800 focus:border-purple-500 rounded-xl px-4 py-3 text-slate-100 placeholder-slate-500 text-sm focus:outline-none transition-all"
+                    className="w-full bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-600"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
-                  Instructions for the carrier
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Special Notes for Carrier
                 </label>
                 <textarea
-                  rows={3}
+                  rows={2}
                   value={form.description}
                   onChange={(e) => set('description', e.target.value)}
-                  placeholder="e.g. Please ask for extra chutney at the counter, room bell doesn't work, call when outside."
-                  className="w-full bg-slate-950/80 border border-slate-800 focus:border-purple-500 rounded-xl p-4 text-slate-100 placeholder-slate-500 text-sm focus:outline-none transition-all resize-none"
+                  placeholder="e.g. Please ask for extra sauce; call once outside Room 302."
+                  className="w-full bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-3 text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:border-blue-600 resize-none"
                 />
               </div>
             </motion.div>
           )}
 
+          {/* Step 2: Locations */}
           {step === 1 && (
             <motion.div
               key="step1"
-              initial={{ opacity: 0, x: 20 }}
+              initial={{ opacity: 0, x: 15 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="space-y-6"
+              exit={{ opacity: 0, x: -15 }}
+              className="space-y-4"
             >
               <div>
-                <div className="flex items-center justify-between mb-3">
-                  <label className="text-xs font-bold text-slate-300 uppercase tracking-wider">
-                    Interactive Map Geolocation
-                  </label>
-                  <span className="text-[11px] text-purple-400">Click map pins to auto-fill</span>
+                <div className="flex items-center justify-between mb-2">
+                  <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                    Map Pin Placement
+                  </span>
+                  <span className="text-[10px] text-blue-600 dark:text-blue-400 font-semibold">
+                    Tap map to drop pin
+                  </span>
                 </div>
                 <LocationPickerMap
                   initialPickup={form.pickup_location}
@@ -231,120 +214,99 @@ export default function RequestWizard() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 shadow-md shadow-emerald-400/50" />
-                    <span className="text-xs font-bold text-slate-200">Pickup Location *</span>
+              <div className="space-y-3">
+                <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+                    <span className="text-xs font-bold text-slate-900 dark:text-white">
+                      Pickup Location *
+                    </span>
                   </div>
                   <input
                     type="text"
                     value={form.pickup_location}
                     onChange={(e) => set('pickup_location', e.target.value)}
-                    placeholder="e.g. Campus Cafeteria Block B"
-                    className="w-full bg-transparent border-b border-slate-700 focus:border-emerald-400 py-1.5 text-sm text-slate-100 focus:outline-none transition-all"
+                    placeholder="e.g. Cafeteria Counter 2"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-600"
                   />
-                  <div className="mt-2 flex items-center gap-1">
-                    <a
-                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                        form.pickup_location || 'Campus'
-                      )}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-[10px] text-emerald-400 hover:underline flex items-center gap-1"
-                    >
-                      View on Google Maps ↗
-                    </a>
-                  </div>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-slate-950/60 border border-slate-800">
-                  <div className="flex items-center gap-2 mb-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-purple-400 shadow-md shadow-purple-400/50" />
-                    <span className="text-xs font-bold text-slate-200">Dropoff Location *</span>
+                <div className="p-3 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="w-2 h-2 rounded-full bg-blue-600 shrink-0" />
+                    <span className="text-xs font-bold text-slate-900 dark:text-white">
+                      Dropoff Location *
+                    </span>
                   </div>
                   <input
                     type="text"
                     value={form.dropoff_location}
                     onChange={(e) => set('dropoff_location', e.target.value)}
                     placeholder="e.g. Tagore Hostel, Room 304"
-                    className="w-full bg-transparent border-b border-slate-700 focus:border-purple-400 py-1.5 text-sm text-slate-100 focus:outline-none transition-all"
+                    className="w-full bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-blue-600"
                   />
-                  <div className="mt-2 flex items-center gap-1">
-                    <a
-                      href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                        form.dropoff_location || 'Hostel'
-                      )}`}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-[10px] text-purple-400 hover:underline flex items-center gap-1"
-                    >
-                      View on Google Maps ↗
-                    </a>
-                  </div>
                 </div>
               </div>
             </motion.div>
           )}
 
+          {/* Step 3: Reward & Review */}
           {step === 2 && (
             <motion.div
               key="step2"
-              initial={{ opacity: 0, x: 20 }}
+              initial={{ opacity: 0, x: 15 }}
               animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              className="space-y-6"
+              exit={{ opacity: 0, x: -15 }}
+              className="space-y-4"
             >
-              {/* Smart Campus Price Estimator */}
-              <div className="p-4 rounded-2xl bg-gradient-to-r from-purple-900/30 to-indigo-900/20 border border-purple-500/30 flex items-center justify-between gap-3">
+              {/* Smart Price Estimator Card */}
+              <div className="p-3.5 rounded-2xl bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/60 flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2.5">
-                  <span className="p-2 rounded-xl bg-purple-500/20 text-purple-300 text-lg">💡</span>
+                  <div className="w-8 h-8 rounded-xl bg-blue-600 text-white flex items-center justify-center shrink-0">
+                    <Sparkles className="w-4 h-4" />
+                  </div>
                   <div>
-                    <span className="text-xs font-bold text-white block">Smart Price Estimator</span>
-                    <span className="text-[11px] text-slate-400">
-                      Suggested for {form.weight_kg ? `${form.weight_kg}kg` : 'standard'} parcel: <b className="text-purple-300">₹{Math.max(30, Math.round(30 + (Number(form.weight_kg || 0.5) * 20)))}</b>
-                    </span>
+                    <p className="text-xs font-bold text-slate-900 dark:text-white">Fair Bounty Suggestion</p>
+                    <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                      Standard for {form.weight_kg}kg parcel: <b className="text-blue-600 dark:text-blue-400 font-mono">₹{recommendedReward}</b>
+                    </p>
                   </div>
                 </div>
                 <button
                   type="button"
-                  onClick={() => set('reward', String(Math.max(30, Math.round(30 + (Number(form.weight_kg || 0.5) * 20)))))}
-                  className="px-3 py-1.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-bold text-xs shadow-md transition-all whitespace-nowrap"
+                  onClick={() => set('reward', String(recommendedReward))}
+                  className="px-2.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shrink-0 transition-all"
                 >
-                  Apply Fair Price
+                  Apply
                 </button>
               </div>
 
-              {/* Bounty / Reward Picker */}
+              {/* Bounty Input */}
               <div>
-                <label className="block text-xs font-bold text-slate-300 uppercase tracking-wider mb-2">
-                  Carrier Reward Bounty (₹) <span className="text-rose-400">*</span>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                  Carrier Bounty Tip (₹) <span className="text-rose-500">*</span>
                 </label>
-                <div className="flex items-center gap-4">
-                  <div className="relative flex-1">
-                    <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl font-bold text-slate-400 font-['Syne']">
-                      ₹
-                    </span>
-                    <input
-                      type="number"
-                      min="10"
-                      value={form.reward}
-                      onChange={(e) => set('reward', e.target.value)}
-                      placeholder="40"
-                      className="w-full bg-slate-950/80 border border-slate-800 focus:border-purple-500 rounded-2xl pl-10 pr-4 py-4 text-2xl font-bold text-purple-400 font-['Syne'] focus:outline-none transition-all"
-                    />
-                  </div>
+                <div className="relative">
+                  <span className="absolute left-4 top-1/2 -translate-y-1/2 text-xl font-black text-slate-400 font-mono">
+                    ₹
+                  </span>
+                  <input
+                    type="number"
+                    min="10"
+                    value={form.reward}
+                    onChange={(e) => set('reward', e.target.value)}
+                    placeholder="40"
+                    className="w-full bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-2xl pl-10 pr-4 py-3 text-2xl font-black text-blue-600 dark:text-blue-400 font-mono focus:outline-none focus:border-blue-600"
+                  />
                 </div>
 
-                {/* Quick reward tags */}
-                <div className="flex items-center gap-2 mt-3 flex-wrap">
-                  <span className="text-xs text-slate-400">Quick suggestions:</span>
-                  {['30', '40', '60', '80', '100'].map((amt) => (
+                <div className="flex items-center gap-1.5 mt-2.5 flex-wrap">
+                  {['30', '40', '50', '80', '100'].map((amt) => (
                     <button
                       key={amt}
                       type="button"
                       onClick={() => set('reward', amt)}
-                      className="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-xs text-slate-200 font-semibold"
+                      className="px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-xs font-bold text-slate-700 dark:text-slate-300 font-mono"
                     >
                       ₹{amt}
                     </button>
@@ -352,100 +314,74 @@ export default function RequestWizard() {
                   <button
                     type="button"
                     onClick={() => set('reward', String(Number(form.reward || 40) + 15))}
-                    className="px-2.5 py-1 rounded-lg bg-amber-500/20 text-amber-300 border border-amber-500/30 text-xs font-semibold hover:bg-amber-500/30"
+                    className="px-2.5 py-1 rounded-lg bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-300 text-xs font-bold flex items-center gap-1"
                   >
-                    ⚡ +₹15 Rush Tip
+                    <Zap className="w-3 h-3 text-amber-500" />
+                    +₹15 Rush
                   </button>
                 </div>
               </div>
 
-              {/* Comprehensive Summary Preview Card */}
-              <div className="p-5 rounded-2xl bg-gradient-to-br from-purple-900/20 to-slate-900 border border-purple-500/30 space-y-4">
-                <div className="flex items-center justify-between border-b border-slate-800/80 pb-3">
-                  <span className="text-xs font-bold uppercase tracking-wider text-purple-400">
-                    Delivery Overview
-                  </span>
-                  <span className="px-2.5 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-xs font-bold">
-                    Ready to Broadcast
-                  </span>
-                </div>
-
-                <div className="flex items-start justify-between gap-4">
-                  <div>
-                    <h3 className="text-base font-bold text-white">{form.title || 'Untitled item'}</h3>
-                    {form.description && (
-                      <p className="text-xs text-slate-400 mt-1 line-clamp-2">{form.description}</p>
-                    )}
-                  </div>
-                  <div className="text-right">
-                    <span className="text-xs text-slate-400 block">Reward</span>
-                    <span className="text-xl font-black text-purple-300 font-['Syne']">
-                      ₹{form.reward || '0'}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 text-xs text-slate-300 pt-2 border-t border-slate-800/80">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-emerald-400">📍</span>
-                    <span className="truncate">{form.pickup_location || 'Not set'}</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-purple-400">🏁</span>
-                    <span className="truncate">{form.dropoff_location || 'Not set'}</span>
-                  </div>
+              {/* Review Card */}
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200/80 dark:border-slate-800 space-y-2 text-xs">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
+                  Summary Preview
+                </span>
+                <p className="font-bold text-slate-900 dark:text-white text-sm">
+                  {form.title || 'Untitled request'}
+                </p>
+                <div className="space-y-1 text-slate-600 dark:text-slate-300 pt-1">
+                  <p className="truncate">📍 Pickup: {form.pickup_location || '—'}</p>
+                  <p className="truncate">🏁 Dropoff: {form.dropoff_location || '—'}</p>
                 </div>
               </div>
             </motion.div>
           )}
         </AnimatePresence>
 
-        {/* Action Navigation Buttons */}
-        <div className="flex items-center justify-between gap-4 mt-8 pt-6 border-t border-slate-800">
+        {/* Sticky-Bottom Safe Area Aware Button Bar */}
+        <div className="flex items-center justify-between gap-3 pt-5 mt-5 border-t border-slate-100 dark:border-slate-800">
           <button
             type="button"
             onClick={() => setStep((s) => s - 1)}
             disabled={step === 0}
-            className={`px-5 py-2.5 rounded-xl text-sm font-semibold border transition-all ${
+            className={`px-4 py-2.5 rounded-xl text-xs font-bold border transition-colors ${
               step === 0
-                ? 'opacity-40 cursor-not-allowed border-slate-800 text-slate-600'
-                : 'border-slate-700 bg-slate-800/60 hover:bg-slate-700 text-slate-300'
+                ? 'opacity-30 border-transparent text-slate-400 cursor-not-allowed'
+                : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50'
             }`}
           >
-            ← Previous
+            ← Back
           </button>
 
-          {step < STEPS.length - 1 ? (
+          {step < 2 ? (
             <button
               type="button"
               onClick={() => {
-                if (step === 0 && !form.title.trim()) {
+                if (step === 0 && !form.title.trim())
                   return toast.error('Please enter what needs to be delivered');
-                }
-                if (step === 1 && (!form.pickup_location.trim() || !form.dropoff_location.trim())) {
-                  return toast.error('Please provide both pickup and dropoff locations');
-                }
+                if (step === 1 && (!form.pickup_location.trim() || !form.dropoff_location.trim()))
+                  return toast.error('Both pickup and dropoff locations required');
                 setStep((s) => s + 1);
               }}
-              className="px-6 py-2.5 rounded-xl bg-purple-600 hover:bg-purple-500 text-white font-semibold text-sm shadow-lg shadow-purple-600/30 transition-all flex items-center gap-2"
+              className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-md shadow-blue-600/20 active:scale-95 transition-all flex items-center gap-1.5"
             >
-              Continue Next →
+              <span>Next</span>
+              <ArrowRight className="w-4 h-4" />
             </button>
           ) : (
             <button
               type="button"
               onClick={handleSubmit}
               disabled={isSubmitting}
-              className="px-7 py-3 rounded-xl bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-sm shadow-xl shadow-purple-600/40 transition-all flex items-center gap-2"
+              className="px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-extrabold text-xs shadow-lg shadow-blue-600/30 active:scale-95 transition-all flex items-center gap-1.5"
             >
               {isSubmitting ? (
-                <>
-                  <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Broadcasting...
-                </>
+                <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
               ) : (
                 <>
-                  <span>🚀</span> Post Live Request
+                  <span>Broadcast Errand</span>
+                  <ArrowRight className="w-4 h-4" />
                 </>
               )}
             </button>

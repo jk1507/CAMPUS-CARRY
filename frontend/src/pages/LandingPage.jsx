@@ -1,126 +1,210 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import { motion } from 'framer-motion';
 import { useNavigate } from 'react-router-dom';
+import { 
+  Zap, 
+  Clock, 
+  ShieldCheck, 
+  ArrowRight, 
+  Bike, 
+  Package, 
+  MapPin, 
+  Sparkles,
+  CheckCircle2
+} from 'lucide-react';
+import Logo from '../components/common/Logo.jsx';
+import ThemeToggle from '../components/common/ThemeToggle.jsx';
 
 export default function LandingPage() {
   const navigate = useNavigate();
-  const canvasRef = useRef(null);
 
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext('2d');
-    let animId;
-    const resize = () => { canvas.width = window.innerWidth; canvas.height = window.innerHeight; };
-    resize();
-    window.addEventListener('resize', resize);
-    const orbs = Array.from({ length: 6 }, (_, i) => ({
-      x: Math.random() * window.innerWidth, y: Math.random() * window.innerHeight,
-      r: 150 + Math.random() * 220, dx: (Math.random() - 0.5) * 0.25, dy: (Math.random() - 0.5) * 0.25,
-      hue: [260,240,270,220,250,280][i],
-    }));
-    const particles = Array.from({ length: 60 }, () => ({
-      x: Math.random() * 1920, y: Math.random() * 1080,
-      r: Math.random() * 1.2 + 0.3, dx: (Math.random() - 0.5) * 0.15, dy: -0.15 - Math.random() * 0.2, alpha: Math.random() * 0.4 + 0.1,
-    }));
-    const draw = () => {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      orbs.forEach(o => {
-        o.x += o.dx; o.y += o.dy;
-        if (o.x < -o.r) o.x = canvas.width + o.r; if (o.x > canvas.width + o.r) o.x = -o.r;
-        if (o.y < -o.r) o.y = canvas.height + o.r; if (o.y > canvas.height + o.r) o.y = -o.r;
-        const g = ctx.createRadialGradient(o.x, o.y, 0, o.x, o.y, o.r);
-        g.addColorStop(0, `hsla(${o.hue},75%,55%,0.1)`); g.addColorStop(1, `hsla(${o.hue},75%,55%,0)`);
-        ctx.beginPath(); ctx.arc(o.x, o.y, o.r, 0, Math.PI * 2); ctx.fillStyle = g; ctx.fill();
-      });
-      particles.forEach(p => {
-        p.x += p.dx; p.y += p.dy;
-        if (p.y < 0) { p.y = canvas.height; p.x = Math.random() * canvas.width; }
-        ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(167,139,250,${p.alpha})`; ctx.fill();
-      });
-      animId = requestAnimationFrame(draw);
-    };
-    draw();
-    return () => { cancelAnimationFrame(animId); window.removeEventListener('resize', resize); };
-  }, []);
-
-  const features = [
-    { icon: '📦', title: 'Post a Request', desc: 'Describe what you need and set a reward. Takes 30 seconds.' },
-    { icon: '🛵', title: 'Carrier Accepts', desc: 'A nearby student picks it up and heads your way.' },
-    { icon: '📍', title: 'Track Live', desc: 'Watch the carrier move in real time on the map.' },
-    { icon: '⭐', title: 'Rate & Done', desc: 'Pay the carrier, leave a rating. That\'s it.' },
+  const steps = [
+    {
+      num: '01',
+      icon: Package,
+      title: 'Post what you need',
+      desc: 'Canteen food, lab kit, printouts, or hostel parcel. Set a fair tip.',
+    },
+    {
+      num: '02',
+      icon: Bike,
+      title: 'A peer grabs it',
+      desc: 'Students walking the same route accept the job in seconds.',
+    },
+    {
+      num: '03',
+      icon: MapPin,
+      title: 'Follow live on map',
+      desc: 'See turn-by-turn progress across campus in real-time.',
+    },
+    {
+      num: '04',
+      icon: ShieldCheck,
+      title: 'OTP Handover',
+      desc: 'Verify the 4-digit code and done. Zero hassle, instant delivery.',
+    },
   ];
 
-  const S = {
-    page: { minHeight: '100vh', background: '#020817', overflow: 'hidden', position: 'relative', fontFamily: 'DM Sans, sans-serif' },
-    grid: { position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.025, backgroundImage: 'linear-gradient(white 1px,transparent 1px),linear-gradient(90deg,white 1px,transparent 1px)', backgroundSize: '60px 60px' },
-    nav: { position: 'relative', zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', padding: '24px 40px', maxWidth: '1200px', margin: '0 auto' },
-    hero: { position: 'relative', zIndex: 10, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '90vh', padding: '0 24px', textAlign: 'center', maxWidth: '900px', margin: '0 auto' },
-  };
-
   return (
-    <div style={S.page}>
-      <canvas ref={canvasRef} style={{ position: 'absolute', inset: 0, pointerEvents: 'none', opacity: 0.9 }} />
-      <div style={S.grid} />
-
-      <nav style={S.nav}>
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
-          <button onClick={() => navigate('/auth')} style={{ padding: '8px 16px', fontSize: '14px', color: '#94a3b8', background: 'none', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 500 }}>Sign In</button>
-          <button onClick={() => navigate('/auth')} style={{ padding: '10px 20px', borderRadius: '50px', fontSize: '14px', fontWeight: 600, background: 'linear-gradient(135deg,#7c3aed,#6d28d9)', color: 'white', border: 'none', cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 0 24px rgba(124,58,237,0.4)' }}>Get Started</button>
+    <div className="min-h-full bg-slate-50 dark:bg-[#090d16] text-slate-900 dark:text-slate-100 flex flex-col selection:bg-blue-600 selection:text-white">
+      {/* Top Navbar */}
+      <nav className="w-full px-5 py-4 max-w-4xl mx-auto flex items-center justify-between">
+        <Logo />
+        <div className="flex items-center gap-2">
+          <ThemeToggle />
+          <button
+            onClick={() => navigate('/auth')}
+            className="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+          >
+            Sign In
+          </button>
+          <button
+            onClick={() => navigate('/auth')}
+            className="px-4 py-2 rounded-xl text-xs sm:text-sm font-bold bg-blue-600 hover:bg-blue-700 text-white shadow-md shadow-blue-600/25 active:scale-95 transition-all"
+          >
+            Get Started
+          </button>
         </div>
       </nav>
 
-      <div style={S.hero}>
-        <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.1 }}
-          style={{ display:'inline-flex', alignItems:'center', gap:'8px', padding:'6px 16px', borderRadius:'50px', border:'1px solid rgba(124,58,237,0.3)', background:'rgba(124,58,237,0.05)', color:'#a78bfa', fontSize:'11px', fontFamily:'monospace', letterSpacing:'0.12em', textTransform:'uppercase', marginBottom:'36px' }}>
-          <span style={{ width:'6px', height:'6px', borderRadius:'50%', background:'#a78bfa' }} /> Student-powered campus delivery
-        </motion.div>
+      {/* Hero Section */}
+      <main className="flex-1 max-w-4xl mx-auto px-5 pt-8 pb-16 flex flex-col items-center text-center">
+        {/* Campus Live Badge */}
+        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 dark:bg-blue-950/50 border border-blue-200 dark:border-blue-900/60 text-blue-700 dark:text-blue-300 text-xs font-bold mb-6 animate-pulse">
+          <Sparkles className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+          <span>Made for Indian University Campuses</span>
+        </div>
 
-        <motion.div initial={{ opacity:0, y:30 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.15 }} style={{ display:'flex', flexDirection:'column', alignItems:'center', marginBottom:'24px' }}>
-          <div style={{ width:'80px', height:'80px', borderRadius:'24px', background:'linear-gradient(135deg,#7c3aed,#4f46e5)', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'42px', marginBottom:'20px', boxShadow:'0 0 60px rgba(124,58,237,0.5)' }}>🛵</div>
-          <h1 style={{ fontFamily:'Syne, sans-serif', fontWeight:900, fontSize:'clamp(52px,10vw,100px)', color:'white', lineHeight:0.9, letterSpacing:'-0.04em', marginBottom:'0' }}>
-            Campus<span style={{ backgroundImage:'linear-gradient(135deg,#a78bfa 0%,#818cf8 50%,#60a5fa 100%)', WebkitBackgroundClip:'text', WebkitTextFillColor:'transparent', backgroundClip:'text' }}>Carry</span>
-          </h1>
-        </motion.div>
+        {/* Hero Headline */}
+        <h1 className="text-3xl sm:text-5xl font-extrabold tracking-tight text-slate-950 dark:text-white max-w-2xl leading-[1.15]">
+          Campus errands, moved in <span className="text-blue-600 dark:text-blue-400 underline decoration-blue-500/30 decoration-wavy">minutes</span>.
+        </h1>
 
-        <motion.p initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.3 }} style={{ fontSize:'clamp(18px,3vw,26px)', color:'#94a3b8', fontWeight:400, marginBottom:'12px', fontStyle:'italic' }}>
-          Forgot something? We've got it.
-        </motion.p>
-        <motion.p initial={{ opacity:0 }} animate={{ opacity:1 }} transition={{ delay:0.4 }} style={{ fontSize:'15px', color:'#475569', maxWidth:'480px', lineHeight:1.7, marginBottom:'48px' }}>
-          Connect with fellow students to send and receive anything across campus — fast, trusted, and rewarding.
-        </motion.p>
+        <p className="mt-4 text-base sm:text-lg text-slate-600 dark:text-slate-400 max-w-xl font-normal leading-relaxed">
+          Need canteen lunch, library books, or packages delivered between classes? Tap peers on your route to bring it right to your door.
+        </p>
 
-        <motion.div initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ delay:0.5 }} style={{ display:'flex', gap:'16px', flexWrap:'wrap', justifyContent:'center', marginBottom:'72px' }}>
-          <button onClick={() => navigate('/auth')} style={{ padding:'16px 36px', borderRadius:'16px', fontSize:'16px', fontWeight:700, background:'linear-gradient(135deg,#7c3aed,#6d28d9)', color:'white', border:'none', cursor:'pointer', fontFamily:'inherit', boxShadow:'0 0 40px rgba(124,58,237,0.45)' }}>Request a Delivery →</button>
-          <button onClick={() => navigate('/auth')} style={{ padding:'16px 36px', borderRadius:'16px', fontSize:'16px', fontWeight:700, background:'rgba(30,41,59,0.8)', color:'white', border:'1px solid #334155', cursor:'pointer', fontFamily:'inherit' }}>Earn as Carrier 🛵</button>
-        </motion.div>
+        {/* Action CTAs */}
+        <div className="mt-8 flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+          <button
+            onClick={() => navigate('/auth')}
+            className="w-full sm:w-auto px-7 py-3.5 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-sm shadow-xl shadow-blue-600/30 flex items-center justify-center gap-2 active:scale-95 transition-all"
+          >
+            <span>Request an Errand</span>
+            <ArrowRight className="w-4 h-4" />
+          </button>
+          <button
+            onClick={() => navigate('/auth')}
+            className="w-full sm:w-auto px-7 py-3.5 rounded-2xl bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 border border-slate-200 dark:border-slate-700 font-bold text-sm hover:bg-slate-50 dark:hover:bg-slate-750 flex items-center justify-center gap-2 transition-all shadow-sm"
+          >
+            <Bike className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+            <span>Deliver & Earn Money</span>
+          </button>
+        </div>
 
-        <motion.div initial={{ opacity:0 }} animate={{ opacity:1 }} transition={{ delay:0.75 }} style={{ display:'flex', gap:'60px', flexWrap:'wrap', justifyContent:'center' }}>
-          {[['2 min','Avg pickup'],['₹50–500','Per delivery'],['100%','Campus verified']].map(([v,l]) => (
-            <div key={l} style={{ textAlign:'center' }}>
-              <div style={{ fontFamily:'Syne, sans-serif', fontWeight:900, fontSize:'32px', color:'white' }}>{v}</div>
-              <div style={{ fontSize:'12px', color:'#475569', marginTop:'4px', fontWeight:500 }}>{l}</div>
+        {/* Animated Delivery Visual Box */}
+        <div className="mt-10 w-full max-w-md p-5 rounded-3xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xl text-left">
+          <div className="flex items-center justify-between mb-3 pb-3 border-b border-slate-100 dark:border-slate-800">
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-ping" />
+              <span className="text-xs font-bold text-slate-900 dark:text-white">Live Route Demo</span>
             </div>
-          ))}
-        </motion.div>
-      </div>
+            <span className="text-xs font-extrabold text-blue-600 dark:text-blue-400 font-mono">₹40 Bounty</span>
+          </div>
+          
+          <div className="space-y-2 text-xs">
+            <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+              <span className="font-semibold text-slate-900 dark:text-white">Cafeteria Block A</span>
+            </div>
+            <div className="w-0.5 h-4 bg-slate-200 dark:bg-slate-700 ml-1" />
+            <div className="flex items-center gap-2 text-slate-600 dark:text-slate-300">
+              <span className="w-2 h-2 rounded-full bg-blue-600 shrink-0" />
+              <span className="font-semibold text-slate-900 dark:text-white">Hostel Block 3, Room 204</span>
+            </div>
+          </div>
 
-      <div style={{ position:'relative', zIndex:10, maxWidth:'1000px', margin:'0 auto', padding:'0 24px 100px' }}>
-        <div style={{ textAlign:'center', marginBottom:'48px' }}>
-          <p style={{ color:'#7c3aed', fontFamily:'monospace', fontSize:'11px', letterSpacing:'0.15em', textTransform:'uppercase', marginBottom:'12px' }}>How it works</p>
-          <h2 style={{ fontFamily:'Syne, sans-serif', fontWeight:900, fontSize:'36px', color:'white' }}>Simple as 1, 2, 3, 4</h2>
+          <div className="mt-4 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px] text-slate-500">
+            <span>⏱ ~8 min walking</span>
+            <span className="font-bold text-emerald-600 dark:text-emerald-400">Carrier Nearby (120m)</span>
+          </div>
         </div>
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit,minmax(200px,1fr))', gap:'16px' }}>
-          {features.map((f, i) => (
-            <motion.div key={i} initial={{ opacity:0, y:20 }} whileInView={{ opacity:1, y:0 }} viewport={{ once:true }} transition={{ delay:i*0.1 }}
-              style={{ background:'rgba(15,23,42,0.7)', border:'1px solid #1e293b', borderRadius:'20px', padding:'24px', textAlign:'center' }}>
-              <div style={{ fontSize:'32px', marginBottom:'12px' }}>{f.icon}</div>
-              <p style={{ color:'white', fontWeight:600, fontSize:'14px', marginBottom:'6px' }}>{f.title}</p>
-              <p style={{ color:'#475569', fontSize:'12px', lineHeight:1.6 }}>{f.desc}</p>
-            </motion.div>
-          ))}
+
+        {/* Quick Stats Strip */}
+        <div className="mt-12 grid grid-cols-3 gap-3 w-full max-w-xl">
+          <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm">
+            <p className="text-2xl font-black text-blue-600 dark:text-blue-400 font-mono">2 min</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium">Avg Match Time</p>
+          </div>
+          <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm">
+            <p className="text-2xl font-black text-emerald-600 dark:text-emerald-400 font-mono">₹30-100</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium">Per Delivery</p>
+          </div>
+          <div className="p-4 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm">
+            <p className="text-2xl font-black text-purple-600 dark:text-purple-400 font-mono">100%</p>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 font-medium">Peer Verified</p>
+          </div>
         </div>
-      </div>
+
+        {/* How It Works Header */}
+        <div className="mt-20 text-center w-full">
+          <span className="text-xs font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
+            Simple 4-Step Flow
+          </span>
+          <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-950 dark:text-white mt-1">
+            How Zipp works on your campus
+          </h2>
+        </div>
+
+        {/* How It Works - Swipeable Cards on mobile, 4-col on desktop */}
+        <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 w-full">
+          {steps.map((st) => {
+            const Icon = st.icon;
+            return (
+              <div
+                key={st.num}
+                className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 text-left shadow-sm flex flex-col justify-between"
+              >
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <span className="text-xs font-black text-slate-400 dark:text-slate-600 font-mono">
+                      {st.num}
+                    </span>
+                    <div className="w-8 h-8 rounded-xl bg-blue-50 dark:bg-blue-950 text-blue-600 dark:text-blue-400 flex items-center justify-center">
+                      <Icon className="w-4 h-4" />
+                    </div>
+                  </div>
+                  <h3 className="font-bold text-slate-900 dark:text-white text-sm mb-1.5">
+                    {st.title}
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed font-normal">
+                    {st.desc}
+                  </p>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Final CTA Banner */}
+        <div className="mt-16 w-full p-8 rounded-3xl bg-blue-600 text-white text-center shadow-xl shadow-blue-600/20">
+          <h2 className="text-2xl font-black">Ready to get items delivered?</h2>
+          <p className="text-blue-100 text-xs sm:text-sm mt-1 max-w-md mx-auto">
+            Join students from your campus saving time and earning pocket money between classes.
+          </p>
+          <button
+            onClick={() => navigate('/auth')}
+            className="mt-6 px-8 py-3.5 rounded-2xl bg-white text-blue-600 font-extrabold text-sm hover:bg-blue-50 active:scale-95 transition-all shadow-lg"
+          >
+            Create Your Account Now
+          </button>
+        </div>
+      </main>
+
+      {/* Footer */}
+      <footer className="w-full py-6 border-t border-slate-200 dark:border-slate-800 text-center text-xs text-slate-500 dark:text-slate-400">
+        <p>© 2026 Zipp Campus Delivery. Built for college peer networks.</p>
+      </footer>
     </div>
   );
 }

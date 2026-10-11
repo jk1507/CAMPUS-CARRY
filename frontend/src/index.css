@@ -2,125 +2,204 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ── Zipp Design Tokens (Light-First + Automatic & Manual Dark Mode) ── */
 :root {
-  --font-main: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
-  --font-display: 'Syne', sans-serif;
-  --accent: #8b5cf6;
-  --accent-glow: rgba(139, 92, 246, 0.4);
-  --accent-light: #c4b5fd;
-  --carrier: #3b82f6;
-  --carrier-glow: rgba(59, 130, 246, 0.4);
-  --emerald: #10b981;
-  --rose: #f43f5e;
-  --amber: #f59e0b;
-  --bg-primary: #030712;
-  --bg-secondary: #0b1120;
-  --card-bg: rgba(15, 23, 42, 0.75);
-  --card-border: rgba(255, 255, 255, 0.08);
-  --card-hover-border: rgba(139, 92, 246, 0.35);
-  --text-primary: #f8fafc;
-  --text-secondary: #94a3b8;
-  --text-muted: #64748b;
+  --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Surfaces & Ink (Light default) */
+  --color-surface-canvas: #f8fafc;
+  --color-surface-card: #ffffff;
+  --color-surface-elevated: #ffffff;
+  --color-surface-border: #e2e8f0;
+  --color-surface-muted: #f1f5f9;
+
+  --color-ink-primary: #0f172a;
+  --color-ink-secondary: #475569;
+  --color-ink-muted: #94a3b8;
+
+  /* Brand Accents */
+  --color-brand-primary: #2563eb;
+  --color-brand-hover: #1d4ed8;
+  --color-brand-light: #eff6ff;
+
+  --color-carrier-primary: #059669;
+  --color-carrier-hover: #047857;
+  --color-carrier-light: #ecfdf5;
+
+  /* Semantics */
+  --status-open-bg: #ecfdf5;
+  --status-open-text: #059669;
+  --status-open-border: #a7f3d0;
+
+  --status-transit-bg: #fffbeb;
+  --status-transit-text: #b45309;
+  --status-transit-border: #fde68a;
+
+  --status-delivered-bg: #eef2ff;
+  --status-delivered-text: #4338ca;
+  --status-delivered-border: #c7d2fe;
+
+  --status-cancelled-bg: #fef2f2;
+  --status-cancelled-text: #b91c1c;
+  --status-cancelled-border: #fecaca;
+}
+
+/* Dark Mode Overrides */
+.dark, [data-theme="dark"] {
+  --color-surface-canvas: #090d16;
+  --color-surface-card: #111827;
+  --color-surface-elevated: #1f2937;
+  --color-surface-border: #1f2937;
+  --color-surface-muted: #1e293b;
+
+  --color-ink-primary: #f8fafc;
+  --color-ink-secondary: #cbd5e1;
+  --color-ink-muted: #64748b;
+
+  --color-brand-primary: #3b82f6;
+  --color-brand-hover: #2563eb;
+  --color-brand-light: rgba(59, 130, 246, 0.15);
+
+  --color-carrier-primary: #10b981;
+  --color-carrier-hover: #059669;
+  --color-carrier-light: rgba(16, 185, 129, 0.15);
+
+  --status-open-bg: rgba(16, 185, 129, 0.12);
+  --status-open-text: #34d399;
+  --status-open-border: rgba(16, 185, 129, 0.25);
+
+  --status-transit-bg: rgba(245, 158, 11, 0.12);
+  --status-transit-text: #fbbf24;
+  --status-transit-border: rgba(245, 158, 11, 0.25);
+
+  --status-delivered-bg: rgba(99, 102, 241, 0.12);
+  --status-delivered-text: #818cf8;
+  --status-delivered-border: rgba(99, 102, 241, 0.25);
+
+  --status-cancelled-bg: rgba(239, 68, 68, 0.12);
+  --status-cancelled-text: #f87171;
+  --status-cancelled-border: rgba(239, 68, 68, 0.25);
 }
 
 * {
   box-sizing: border-box;
-  margin: 0;
-  padding: 0;
+  -webkit-tap-highlight-color: transparent;
 }
 
-body {
-  background-color: var(--bg-primary);
-  background-image: 
-    radial-gradient(at 0% 0%, rgba(124, 58, 237, 0.12) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(59, 130, 246, 0.1) 0px, transparent 50%),
-    radial-gradient(at 50% 50%, rgba(15, 23, 42, 0.5) 0px, transparent 100%);
-  background-attachment: fixed;
-  color: var(--text-primary);
-  font-family: var(--font-main);
+html, body {
+  min-height: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  background-color: var(--color-surface-canvas);
+  color: var(--color-ink-primary);
+  font-family: var(--font-sans);
+  text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Glassmorphism Classes */
-.glass-panel {
-  background: rgba(15, 23, 42, 0.7);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+/* Ensure mobile inputs do not trigger auto-zoom on iOS */
+input, select, textarea, button {
+  font-family: inherit;
+  font-size: 16px;
+}
+@media (min-width: 640px) {
+  input, select, textarea, button {
+    font-size: 14px;
+  }
 }
 
-.glass-panel-interactive {
-  background: rgba(15, 23, 42, 0.7);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+/* Utility Cards & Touch-friendly containers */
+.zipp-card {
+  background-color: var(--color-surface-card);
+  border: 1px solid var(--color-surface-border);
+  border-radius: 1rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.glass-panel-interactive:hover {
-  background: rgba(30, 41, 59, 0.8);
-  border-color: rgba(139, 92, 246, 0.4);
-  transform: translateY(-2px);
-  box-shadow: 0 12px 30px -10px rgba(124, 58, 237, 0.2);
+.zipp-card-interactive {
+  background-color: var(--color-surface-card);
+  border: 1px solid var(--color-surface-border);
+  border-radius: 1rem;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.04);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.zipp-card-interactive:active {
+  transform: scale(0.985);
+}
+@media (hover: hover) {
+  .zipp-card-interactive:hover {
+    border-color: var(--color-brand-primary);
+    box-shadow: 0 8px 24px -6px rgba(0, 0, 0, 0.08);
+  }
 }
 
-.glass-input {
-  background: rgba(15, 23, 42, 0.85);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #f8fafc;
-  border-radius: 12px;
-  padding: 12px 16px;
-  font-size: 14px;
-  transition: all 0.2s ease;
+/* Input Fields */
+.zipp-input {
+  width: 100%;
+  background-color: var(--color-surface-muted);
+  border: 1.5px solid transparent;
+  color: var(--color-ink-primary);
+  border-radius: 0.875rem;
+  padding: 0.875rem 1rem;
+  font-size: 1rem;
+  transition: all 0.15s ease;
   outline: none;
 }
-
-.glass-input:focus {
-  border-color: #8b5cf6;
-  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.2);
+.zipp-input:focus {
+  background-color: var(--color-surface-card);
+  border-color: var(--color-brand-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
 }
 
-/* Custom Scrollbars */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: #030712;
-}
-
-::-webkit-scrollbar-thumb {
-  background: #334155;
-  border-radius: 9999px;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  background: #8b5cf6;
-}
-
-/* Animations */
-@keyframes pulseGlow {
-  0%, 100% { opacity: 0.6; transform: scale(1); }
-  50% { opacity: 1; transform: scale(1.05); }
-}
-
-.animate-pulse-glow {
-  animation: pulseGlow 3s infinite ease-in-out;
-}
-
-/* Map specific styling */
-.leaflet-container {
+/* Primary Button */
+.zipp-btn-primary {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
   width: 100%;
-  height: 100%;
-  border-radius: 16px;
-  background-color: #0b1120 !important;
+  min-height: 48px;
+  padding: 0.75rem 1.25rem;
+  border-radius: 0.875rem;
+  background-color: var(--color-brand-primary);
+  color: #ffffff;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 4px 14px 0 rgba(37, 99, 235, 0.25);
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.zipp-btn-primary:active {
+  transform: scale(0.98);
 }
 
-.leaflet-bar a {
-  background-color: #0f172a !important;
-  color: #f8fafc !important;
-  border-bottom: 1px solid #334155 !important;
+/* Leaflet Overrides */
+.leaflet-container {
+  font-family: inherit;
+  border-radius: 1rem;
+  background-color: var(--color-surface-canvas) !important;
+}
+.leaflet-control-zoom {
+  border: none !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1) !important;
+  border-radius: 0.75rem !important;
+  overflow: hidden;
+}
+.leaflet-control-zoom a {
+  background: var(--color-surface-card) !important;
+  color: var(--color-ink-primary) !important;
+  border-bottom: 1px solid var(--color-surface-border) !important;
 }
 
+/* Custom Scrollbar for chips & lists */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

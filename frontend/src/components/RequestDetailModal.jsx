@@ -114,14 +114,65 @@ export default function RequestDetailModal({ request: init, onClose, onRefresh, 
     if (tab === 'location' && isRequester) getMyLoc();
   }, [tab]);
 
-  const sendMsg = async () => {
-    if (!msgInput.trim()) return;
-    const msg = { fromId: user.id, fromName: user.name, message: msgInput.trim(), timestamp: new Date().toISOString() };
-    try { await client.post('/chat', { request_id: request.id, message: msgInput.trim() }); } catch {}
-    getSocket().emit('message:send', { requestId: request.id, message: msgInput.trim() });
+  const [deliveryOtpInput, setDeliveryOtpInput] = useState('');
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [chatImageBase64, setChatImageBase64] = useState(null);
+
+  const sendMsg = async (imgUrl) => {
+    const textToSend = msgInput.trim();
+    const finalImg = imgUrl || chatImageBase64;
+    if (!textToSend && !finalImg) return;
+
+    const msg = {
+      fromId: user.id,
+      fromName: user.name,
+      message: textToSend || '📷 [Photo Attached]',
+      image_url: finalImg || null,
+      timestamp: new Date().toISOString()
+    };
+    try {
+      await client.post('/chat', { request_id: request.id, message: textToSend, image_url: finalImg });
+    } catch {}
+    getSocket().emit('message:send', { requestId: request.id, message: textToSend, imageUrl: finalImg });
     setMessages(prev => [...prev, msg]);
     setMsgInput('');
+    setChatImageBase64(null);
     setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior:'smooth' }), 60);
+  };
+
+  const handleImagePick = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setChatImageBase64(event.target.result);
+      toast.success('📷 Photo ready to send!');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleVerifyDeliveryOtp = async () => {
+    if (!deliveryOtpInput.trim()) {
+      return toast.error('Please enter the 4-digit handover OTP from the requester');
+    }
+    setIsVerifyingOtp(true);
+    try {
+      const res = await client.post(`/requests/${request.id}/verify-otp`, {
+        otp: deliveryOtpInput.trim(),
+      });
+      if (res.data.success) {
+        toast.success('🎉 Delivery Confirmed & Handed Over!');
+        setRequest(p => ({ ...p, status: 'delivered' }));
+        onRefresh?.();
+        setTimeout(() => setTab('feedback'), 700);
+      } else {
+        toast.error(res.data.error || 'Invalid OTP');
+      }
+    } catch (err) {
+      toast.error(err.response?.data?.error || 'Verification failed');
+    } finally {
+      setIsVerifyingOtp(false);
+    }
   };
 
   const startLoc = () => {
@@ -299,6 +350,49 @@ export default function RequestDetailModal({ request: init, onClose, onRefresh, 
                 </div>
               )}
 
+              {/* 4-Digit Handover OTP Card */}
+              {isRequester && request.otp && request.status !== 'delivered' && request.status !== 'cancelled' && (
+                <div style={{ ...card, border:'1px solid rgba(16,185,129,0.4)', background:'rgba(16,185,129,0.06)' }}>
+                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:'4px' }}>
+                    <span style={{ fontSize:'11px', color:'#10b981', fontWeight:700, textTransform:'uppercase' }}>🔐 Handover Security OTP</span>
+                    <span style={{ fontSize:'10px', color:'#94a3b8' }}>Share only when receiving item</span>
+                  </div>
+                  <div style={{ display:'flex', alignItems:'center', justifyContent:'center', gap:'8px', margin:'10px 0' }}>
+                    {request.otp.split('').map((digit, i) => (
+                      <span key={i} style={{ width:'40px', height:'46px', borderRadius:'10px', background:'#0f172a', border:'2px solid #10b981', display:'flex', alignItems:'center', justifyContent:'center', fontSize:'22px', fontWeight:900, color:'#10b981', fontFamily:'Syne' }}>
+                        {digit}
+                      </span>
+                    ))}
+                  </div>
+                  <p style={{ textAlign:'center', fontSize:'11px', color:'#64748b' }}>Carrier must enter this 4-digit code to complete the delivery.</p>
+                </div>
+              )}
+
+              {/* Carrier Handover OTP input modal block */}
+              {isCarrier && request.status === 'in_progress' && (
+                <div style={{ ...card, border:'1px solid rgba(59,130,246,0.4)', background:'rgba(59,130,246,0.06)' }}>
+                  <p style={{ fontSize:'12px', color:'#93c5fd', fontWeight:700, marginBottom:'4px' }}>🔐 Verify Delivery with 4-Digit OTP</p>
+                  <p style={{ fontSize:'11px', color:'#94a3b8', marginBottom:'10px' }}>Ask {request.requester_name || 'the requester'} for their 4-digit handover code.</p>
+                  <div style={{ display:'flex', gap:'8px' }}>
+                    <input
+                      type="text"
+                      maxLength={6}
+                      value={deliveryOtpInput}
+                      onChange={e => setDeliveryOtpInput(e.target.value)}
+                      placeholder="Enter 4-Digit OTP"
+                      style={{ ...inp, flex:1, textAlign:'center', letterSpacing:'4px', fontSize:'16px', fontWeight:700 }}
+                    />
+                    <button
+                      onClick={handleVerifyDeliveryOtp}
+                      disabled={isVerifyingOtp}
+                      style={{ padding:'10px 18px', borderRadius:'12px', background:'#10b981', color:'white', border:'none', fontWeight:700, fontSize:'13px', cursor:'pointer' }}
+                    >
+                      {isVerifyingOtp ? '...' : 'Verify & Complete'}
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Actions */}
               <div style={{ display:'flex', flexDirection:'column', gap:'8px' }}>
                 {request.status === 'open' && activeRole === 'carrier' && !isRequester && !isCarrier && (
@@ -311,7 +405,7 @@ export default function RequestDetailModal({ request: init, onClose, onRefresh, 
                   <button onClick={() => handleStatus('in_progress')} style={{ width:'100%', padding:'14px', borderRadius:'12px', background:'rgba(250,204,21,0.1)', color:'#facc15', border:'1px solid rgba(250,204,21,0.2)', fontWeight:600, fontSize:'14px', cursor:'pointer', fontFamily:'inherit' }}>📦 I Have the Item — Start Delivery</button>
                 )}
                 {isCarrier && request.status === 'in_progress' && (
-                  <button onClick={() => handleStatus('delivered')} style={{ width:'100%', padding:'14px', borderRadius:'12px', background:'rgba(52,211,153,0.1)', color:'#34d399', border:'1px solid rgba(52,211,153,0.2)', fontWeight:600, fontSize:'14px', cursor:'pointer', fontFamily:'inherit' }}>🏁 Mark as Delivered</button>
+                  <button onClick={handleVerifyDeliveryOtp} style={{ width:'100%', padding:'14px', borderRadius:'12px', background:'rgba(52,211,153,0.15)', color:'#34d399', border:'1px solid rgba(52,211,153,0.3)', fontWeight:700, fontSize:'14px', cursor:'pointer', fontFamily:'inherit' }}>🏁 Verify OTP & Complete Handover</button>
                 )}
               </div>
             </div>
@@ -321,14 +415,19 @@ export default function RequestDetailModal({ request: init, onClose, onRefresh, 
           {tab === 'chat' && (
             <div style={{ display:'flex', flexDirection:'column', minHeight:'360px', height:'100%' }}>
               <div style={{ flex:1, overflowY:'auto', padding:'16px', display:'flex', flexDirection:'column', gap:'12px' }}>
-                {messages.length === 0 && <div style={{ textAlign:'center', padding:'48px 0', color:'#475569' }}><div style={{ fontSize:'40px', marginBottom:'8px' }}>💬</div><p style={{ fontSize:'14px' }}>No messages yet. Say hi!</p></div>}
+                {messages.length === 0 && <div style={{ textAlign:'center', padding:'48px 0', color:'#475569' }}><div style={{ fontSize:'40px', marginBottom:'8px' }}>💬</div><p style={{ fontSize:'14px' }}>No messages yet. Say hi or send a photo receipt!</p></div>}
                 {messages.map((msg, i) => {
                   const mine = msg.fromId === user?.id;
                   return (
                     <div key={i} style={{ display:'flex', justifyContent:mine?'flex-end':'flex-start' }}>
                       <div style={{ maxWidth:'78%', display:'flex', flexDirection:'column', gap:'2px', alignItems:mine?'flex-end':'flex-start' }}>
                         {!mine && <p style={{ fontSize:'11px', color:'#475569', marginLeft:'4px' }}>{msg.fromName}</p>}
-                        <div style={{ padding:'10px 16px', borderRadius:'18px', fontSize:'14px', lineHeight:1.5, background:mine?'#7c3aed':'#1e293b', color:'white', borderBottomRightRadius:mine?'4px':'18px', borderBottomLeftRadius:mine?'18px':'4px', border:mine?'none':'1px solid #334155' }}>{msg.message}</div>
+                        <div style={{ padding:'10px 14px', borderRadius:'18px', fontSize:'14px', lineHeight:1.5, background:mine?'#7c3aed':'#1e293b', color:'white', borderBottomRightRadius:mine?'4px':'18px', borderBottomLeftRadius:mine?'18px':'4px', border:mine?'none':'1px solid #334155' }}>
+                          {msg.image_url && (
+                            <img src={msg.image_url} alt="Attachment" style={{ width:'100%', maxHeight:'180px', objectFit:'cover', borderRadius:'12px', marginBottom: msg.message && msg.message !== '📷 [Photo Attached]' ? '8px' : '0' }} />
+                          )}
+                          {msg.message && msg.message !== '📷 [Photo Attached]' && <span>{msg.message}</span>}
+                        </div>
                         <p style={{ fontSize:'10px', color:'#334155', margin:'0 4px' }}>{msg.timestamp ? new Date(msg.timestamp).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'}) : ''}</p>
                       </div>
                     </div>
@@ -336,9 +435,29 @@ export default function RequestDetailModal({ request: init, onClose, onRefresh, 
                 })}
                 <div ref={chatEndRef} />
               </div>
-              <div style={{ padding:'12px 16px', borderTop:'1px solid #1e293b', display:'flex', gap:'8px', flexShrink:0 }}>
-                <input value={msgInput} onChange={e=>setMsgInput(e.target.value)} onKeyDown={e=>e.key==='Enter'&&sendMsg()} placeholder="Type a message... (Enter to send)" style={{ ...inp, flex:1 }} />
-                <button onClick={sendMsg} style={{ padding:'10px 16px', borderRadius:'12px', background:'#7c3aed', color:'white', border:'none', cursor:'pointer', fontSize:'18px', fontWeight:700 }}>↑</button>
+
+              {/* Chat Input Bar with Camera/Photo Attachment */}
+              <div style={{ padding:'12px 16px', borderTop:'1px solid #1e293b', display:'flex', flexDirection:'column', gap:'8px', flexShrink:0 }}>
+                {chatImageBase64 && (
+                  <div style={{ display:'flex', alignItems:'center', gap:'8px', padding:'6px 10px', background:'rgba(124,58,237,0.15)', borderRadius:'10px', width:'fit-content' }}>
+                    <span style={{ fontSize:'12px', color:'#a78bfa' }}>📷 Photo attached</span>
+                    <button onClick={() => setChatImageBase64(null)} style={{ background:'none', border:'none', color:'#f87171', cursor:'pointer', fontSize:'11px', fontWeight:700 }}>✕</button>
+                  </div>
+                )}
+                <div style={{ display:'flex', gap:'8px' }}>
+                  <label style={{ display:'flex', alignItems:'center', justifyContent:'center', width:'42px', height:'42px', borderRadius:'12px', background:'#1e293b', border:'1px solid #334155', cursor:'pointer', fontSize:'18px', color:'#94a3b8' }} title="Attach photo or receipt">
+                    📷
+                    <input type="file" accept="image/*" onChange={handleImagePick} style={{ display:'none' }} />
+                  </label>
+                  <input
+                    value={msgInput}
+                    onChange={e=>setMsgInput(e.target.value)}
+                    onKeyDown={e=>e.key==='Enter' && sendMsg()}
+                    placeholder="Type message or attach receipt..."
+                    style={{ ...inp, flex:1 }}
+                  />
+                  <button onClick={() => sendMsg()} style={{ padding:'10px 16px', borderRadius:'12px', background:'#7c3aed', color:'white', border:'none', cursor:'pointer', fontSize:'18px', fontWeight:700 }}>↑</button>
+                </div>
               </div>
             </div>
           )}
@@ -356,6 +475,31 @@ export default function RequestDetailModal({ request: init, onClose, onRefresh, 
                   {sharingLoc && <p style={{ color:'#34d399', textAlign:'center', fontSize:'12px', marginTop:'8px' }}>● Broadcasting live...</p>}
                 </div>
               )}
+              {/* Interactive Turn-by-Turn GPS for Both Requester & Carrier */}
+              <div style={card}>
+                <p style={{ color:'white', fontSize:'14px', fontWeight:600, marginBottom:'6px' }}>📍 Campus Google Maps Navigation</p>
+                <p style={{ color:'#94a3b8', fontSize:'12px', marginBottom:'12px' }}>
+                  Open turn-by-turn navigation from <b>{request.pickup_location}</b> to <b>{request.dropoff_location}</b>.
+                </p>
+                <div style={{ display:'flex', gap:'8px', flexWrap:'wrap' }}>
+                  <a href={`https://www.google.com/maps/dir/?api=1&origin=${encodeURIComponent(request.pickup_location)}&destination=${encodeURIComponent(request.dropoff_location)}`}
+                    target="_blank" rel="noreferrer"
+                    style={{ flex:1, textAlign:'center', padding:'10px 14px', borderRadius:'10px', background:'#2563eb', color:'white', fontSize:'12px', fontWeight:600, textDecoration:'none', boxShadow:'0 4px 12px rgba(37,99,235,0.3)' }}>
+                    🗺 Open Full Route in Google Maps
+                  </a>
+                  <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(request.pickup_location)}`}
+                    target="_blank" rel="noreferrer"
+                    style={{ padding:'10px 14px', borderRadius:'10px', background:'rgba(16,185,129,0.15)', color:'#34d399', border:'1px solid rgba(16,185,129,0.3)', fontSize:'12px', fontWeight:600, textDecoration:'none' }}>
+                    Pickup Pin
+                  </a>
+                  <a href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(request.dropoff_location)}`}
+                    target="_blank" rel="noreferrer"
+                    style={{ padding:'10px 14px', borderRadius:'10px', background:'rgba(139,92,246,0.15)', color:'#c4b5fd', border:'1px solid rgba(139,92,246,0.3)', fontSize:'12px', fontWeight:600, textDecoration:'none' }}>
+                    Dropoff Pin
+                  </a>
+                </div>
+              </div>
+
               {carrierLoc ? (
                 <div>
                   <div style={{ display:'flex', alignItems:'center', gap:'8px', marginBottom:'8px' }}>
@@ -366,13 +510,14 @@ export default function RequestDetailModal({ request: init, onClose, onRefresh, 
                     requesterLat={requesterLoc?.lat} requesterLng={requesterLoc?.lng} requesterName={isRequester ? user?.name : request.requester_name} />
                   <a href={`https://www.google.com/maps?q=${carrierLoc.lat},${carrierLoc.lng}`} target="_blank" rel="noreferrer"
                     style={{ display:'block', textAlign:'center', marginTop:'10px', padding:'10px', borderRadius:'12px', background:'rgba(59,130,246,0.1)', color:'#60a5fa', border:'1px solid rgba(59,130,246,0.2)', fontSize:'13px', fontWeight:500, textDecoration:'none' }}>
-                    Open in Google Maps ↗
+                    Open Carrier's Live GPS in Google Maps ↗
                   </a>
                 </div>
               ) : isRequester && (
-                <div style={{ textAlign:'center', padding:'48px 0', color:'#475569' }}>
+                <div style={{ textAlign:'center', padding:'32px 0', color:'#475569' }}>
                   <div style={{ fontSize:'40px', marginBottom:'12px' }}>🗺</div>
-                  <p style={{ fontSize:'14px' }}>Waiting for carrier to share location...</p>
+                  <p style={{ fontSize:'14px', color:'#e2e8f0', fontWeight:600 }}>Waiting for carrier to broadcast live coordinates...</p>
+                  <p style={{ fontSize:'12px', color:'#64748b', marginTop:'4px' }}>You can use the Google Maps Route button above to see the route.</p>
                 </div>
               )}
             </div>

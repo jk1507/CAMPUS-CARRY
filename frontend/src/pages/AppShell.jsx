@@ -12,7 +12,8 @@ import Earnings from '../components/Earnings.jsx';
 import RequesterDashboard from '../components/RequesterDashboard.jsx';
 import HelpPage from '../components/HelpPage.jsx';
 import WithdrawalPage from '../components/WithdrawalPage.jsx';
-import CampusMap3D from '../components/map/CampusMap3D.jsx';
+import CampusRadarMap from '../components/map/CampusRadarMap.jsx';
+import LeaderboardPage from '../components/LeaderboardPage.jsx';
 import RequestDetailModal from '../components/RequestDetailModal.jsx';
 import useAuthStore from '../store/authStore.js';
 import useRequestStore from '../store/requestStore.js';
@@ -94,15 +95,16 @@ export default function AppShell() {
       <RoleBanner />
       <div style={{ display:'flex', flex:1, overflow:'hidden' }}>
         <Sidebar />
-        <main style={{ flex:1, overflowY:'auto', paddingBottom:'80px' }}>
-          <div style={{ maxWidth:'720px', margin:'0 auto', padding:'24px 20px' }}>
+        <main className="flex-1 overflow-y-auto pb-20 md:pb-6 px-3 sm:px-6 py-4 md:py-6 w-full max-w-full">
+          <div className="max-w-4xl mx-auto w-full">
             <Routes>
               <Route path="/"         element={activeRole === 'carrier' ? <Feed /> : <MyRequests />} />
               <Route path="/feed"     element={<Feed />} />
               <Route path="/mine"     element={<MyRequests />} />
               <Route path="/carrying" element={<Carrying />} />
               <Route path="/new"      element={<RequestWizard />} />
-              <Route path="/map"      element={<CampusMap3D />} />
+              <Route path="/map"      element={<CampusRadarMap />} />
+              <Route path="/leaderboard" element={<LeaderboardPage />} />
               <Route path="/profile"  element={<ProfilePage />} />
               <Route path="/earnings"     element={<Earnings />} />
               <Route path="/withdraw"    element={<WithdrawalPage />} />

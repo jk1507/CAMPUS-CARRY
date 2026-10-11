@@ -27,8 +27,20 @@ const useRequestStore = create((set) => ({
   },
 
   acceptRequest: async (id) => {
-    try { await client.patch(`/requests/${id}/accept`); set(s => ({ feed: s.feed.filter(r => r.id !== id) })); return { success: true }; }
-    catch (err) { return { success: false, error: err.response?.data?.error }; }
+    try {
+      const res = await client.patch(`/requests/${id}/accept`);
+      set((s) => ({
+        feed: s.feed.filter((r) => r.id !== id),
+      }));
+      // Refresh carrying list automatically
+      try {
+        const carryRes = await client.get('/requests/carrying');
+        set({ carrying: carryRes.data.data });
+      } catch (e) {}
+      return { success: true, data: res.data.data };
+    } catch (err) {
+      return { success: false, error: err.response?.data?.error || err.message || 'Failed to accept request' };
+    }
   },
 
   cancelRequest: async (id) => {

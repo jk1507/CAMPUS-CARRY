@@ -7,17 +7,19 @@ import { disconnectSocket } from '../socket/socket.js';
 const requesterLinks = [
   { to:'/app',         label:'My Requests',        icon:'📦', end:true },
   { to:'/app/new',     label:'New Request',         icon:'＋' },
+  { to:'/app/map',     label:'Live Radar Map',      icon:'🗺' },
+  { to:'/app/leaderboard', label:'Leaderboard',     icon:'🏆' },
   { to:'/app/spending',label:'Spending Dashboard',  icon:'📊' },
-  { to:'/app/map',     label:'3D Map',              icon:'🗺' },
   { to:'/app/profile', label:'Profile',             icon:'👤' },
   { to:'/app/help',    label:'Help & Report',       icon:'🆘' },
 ];
 const carrierLinks = [
   { to:'/app',          label:'Live Feed',     icon:'⚡', end:true },
   { to:'/app/carrying', label:'My Deliveries', icon:'🛵' },
+  { to:'/app/map',      label:'Live Radar Map',icon:'🗺' },
+  { to:'/app/leaderboard', label:'Leaderboard',icon:'🏆' },
   { to:'/app/earnings',  label:'Earnings',     icon:'💰' },
   { to:'/app/withdraw', label:'Withdraw',       icon:'💸' },
-  { to:'/app/map',      label:'3D Map',        icon:'🗺' },
   { to:'/app/profile',  label:'Profile',       icon:'👤' },
   { to:'/app/help',     label:'Help & Report', icon:'🆘' },
 ];

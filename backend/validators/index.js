@@ -21,7 +21,7 @@ export const createRequestSchema = z.object({
   dropoff_location:z.string().min(3, 'Dropoff location required').max(200),
   reward:          z.number({ required_error: 'Reward is required' }).positive('Reward must be positive'),
   weight_kg:       z.number().positive().max(100).optional().nullable(),
-  deadline:        z.string().datetime('Invalid deadline format').optional().nullable(),
+  deadline:        z.string().optional().nullable(),
 });
 
 export const acceptRequestSchema = z.object({});

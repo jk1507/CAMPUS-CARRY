@@ -24,12 +24,18 @@ export const initSockets = (io) => {
       }
     });
 
-    socket.on('message:send', ({ requestId, message }) => {
-      if (!message?.trim()) return;
-      const payload = { fromId: socket.user.id, fromName: socket.user.name || 'User', message: message.trim(), timestamp: new Date().toISOString() };
+    socket.on('message:send', ({ requestId, message, imageUrl }) => {
+      const text = (message || '').trim() || (imageUrl ? '📷 [Photo Attached]' : '');
+      if (!text && !imageUrl) return;
+      const payload = {
+        fromId: socket.user.id,
+        fromName: socket.user.name || 'User',
+        message: text,
+        image_url: imageUrl || null,
+        timestamp: new Date().toISOString()
+      };
       io.to(`request:${requestId}`).emit('message:receive', payload);
-      // Notify the other party if they are not in the chat tab
-      socket.broadcast.emit('chat:notify', { requestId, fromName: socket.user.name, message: message.trim().slice(0, 60) });
+      socket.broadcast.emit('chat:notify', { requestId, fromName: socket.user.name, message: text.slice(0, 60) });
     });
 
     socket.on('disconnect', () => logger.info('Socket disconnected', { userId: socket.user.id }));

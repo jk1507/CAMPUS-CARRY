@@ -16,8 +16,8 @@ router.post('/', authenticate, validate(withdrawalSchema), async (req, res) => {
 
     // Cannot withdraw if there's already a pending withdrawal
     const [pending] = await pool.query(
-      'SELECT id FROM withdrawals WHERE user_id = ? AND status = "pending"',
-      [user_id]
+      'SELECT id FROM withdrawals WHERE user_id = ? AND status = ?',
+      [user_id, 'pending']
     );
     if (pending.length > 0) {
       return res.status(409).json({ success: false, error: 'You already have a pending withdrawal request' });

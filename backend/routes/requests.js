@@ -162,7 +162,7 @@ router.patch('/:id/accept', authenticate, async (req, res) => {
       });
     }
 
-    await pool.query('UPDATE requests SET carrier_id = ?, status = "accepted" WHERE id = ?', [req.user.id, requestId]);
+    await pool.query('UPDATE requests SET carrier_id = ?, status = ? WHERE id = ?', [req.user.id, 'accepted', requestId]);
     const [carrier] = await pool.query('SELECT id, name, rating, avatar_url FROM users WHERE id = ?', [req.user.id]);
     
     try {
@@ -209,8 +209,8 @@ router.post('/:id/verify-otp', authenticate, async (req, res) => {
     }
 
     await pool.query(
-      'UPDATE requests SET status = "delivered", paid_out = 1, proof_photo = ? WHERE id = ?',
-      [proof_photo || null, requestId]
+      'UPDATE requests SET status = ?, paid_out = 1, proof_photo = ? WHERE id = ?',
+      ['delivered', proof_photo || null, requestId]
     );
 
     req.app.get('io')?.to(`request:${requestId}`).emit('request:statusUpdate', {
@@ -231,9 +231,9 @@ router.post('/:id/verify-otp', authenticate, async (req, res) => {
 
 router.patch('/:id/cancel', authenticate, async (req, res) => {
   try {
-    const [rows] = await pool.query('SELECT * FROM requests WHERE id = ? AND requester_id = ? AND status = "open"', [req.params.id, req.user.id]);
+    const [rows] = await pool.query('SELECT * FROM requests WHERE id = ? AND requester_id = ? AND status = ?', [req.params.id, req.user.id, 'open']);
     if (!rows.length) return res.status(404).json({ success: false, error: 'Cannot cancel' });
-    await pool.query('UPDATE requests SET status = "cancelled" WHERE id = ?', [req.params.id]);
+    await pool.query('UPDATE requests SET status = ? WHERE id = ?', ['cancelled', req.params.id]);
     req.app.get('io').to(`campus:${rows[0].campus}`).emit('request:removeFromFeed', { requestId: Number(req.params.id) });
     return res.json({ success: true, data: { message: 'Cancelled' } });
   } catch { return res.status(500).json({ success: false, error: 'Failed to cancel' }); }

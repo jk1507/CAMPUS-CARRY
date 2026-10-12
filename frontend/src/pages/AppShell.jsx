@@ -268,15 +268,21 @@ export default function AppShell() {
 
     socket.on('request:removeFromFeed', ({ requestId }) => removeFromFeed(requestId));
 
-    socket.on('request:accepted', async ({ requestId, carrierName }) => {
+    socket.on('request:accepted', async ({ requestId, carrierName, carrierId }) => {
       updateMyRequest(requestId, { status: 'accepted' });
+      // Only pop up if the current user is NOT the carrier who just accepted
+      if (carrierId && user?.id === carrierId) {
+        return;
+      }
       try {
         const res = await client.get(`/requests/${requestId}`);
-        toast.success(`🛵 ${carrierName} accepted your request!`, { duration: 5000 });
-        setFocusedAutoTab('details');
-        setFocusedRequest(res.data.data);
+        if (res.data.data?.requester_id === user?.id) {
+          toast.success(`🛵 ${carrierName} accepted your request!`, { duration: 5000 });
+          setFocusedAutoTab('details');
+          setFocusedRequest(res.data.data);
+        }
       } catch {
-        toast.success(`🛵 ${carrierName} accepted!`);
+        // quiet ignore
       }
     });
 

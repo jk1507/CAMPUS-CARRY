@@ -25,6 +25,7 @@ export default function Sidebar() {
 
   const requesterLinks = [
     { to: '/app', label: 'My Orders', icon: Package, end: true },
+    { to: '/app/feed', label: 'Campus Feed', icon: Compass },
     { to: '/app/new', label: 'Post Errand', icon: Package },
     { to: '/app/map', label: 'Campus Radar', icon: MapPin },
     { to: '/app/leaderboard', label: 'Leaderboard', icon: Trophy },

@@ -115,13 +115,21 @@ export default function MyRequests() {
           <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto mb-5">
             Need lunch from canteen or printouts before class? Post a quick errand.
           </p>
-          <button
-            onClick={() => navigate('/app/new')}
-            className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-600/25 active:scale-95 transition-all inline-flex items-center gap-1.5"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Post an Errand</span>
-          </button>
+          <div className="flex items-center justify-center gap-2.5 flex-wrap">
+            <button
+              onClick={() => navigate('/app/new')}
+              className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold shadow-md shadow-blue-600/25 active:scale-95 transition-all inline-flex items-center gap-1.5"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Post an Errand</span>
+            </button>
+            <button
+              onClick={() => navigate('/app/feed')}
+              className="px-4 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-800 dark:text-slate-200 text-xs font-bold active:scale-95 transition-all inline-flex items-center gap-1.5"
+            >
+              <span>Explore Campus Feed →</span>
+            </button>
+          </div>
         </div>
       ) : (
         <div className="space-y-3">

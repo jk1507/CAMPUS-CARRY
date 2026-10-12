@@ -56,7 +56,9 @@ const useRequestStore = create((set) => ({
     catch (err) { return { success: false, error: err.response?.data?.error }; }
   },
 
-  prependToFeed: (req) => set(s => ({ feed: [req, ...s.feed] })),
+  prependToFeed: (req) => set(s => ({
+    feed: [req, ...s.feed.filter(r => r.id !== req.id)]
+  })),
   removeFromFeed: (id) => set(s => ({ feed: s.feed.filter(r => r.id !== id) })),
   updateMyRequest: (id, patch) => set(s => ({ myRequests: s.myRequests.map(r => r.id === id ? { ...r, ...patch } : r) })),
 }));

@@ -10,7 +10,8 @@ import {
   Sun, 
   Moon, 
   X,
-  ArrowRightLeft
+  ArrowRightLeft,
+  Compass
 } from 'lucide-react';
 import Sidebar from '../components/Sidebar.jsx';
 import BottomNav from '../components/BottomNav.jsx';
@@ -170,6 +171,14 @@ function MoreBottomSheet({ isOpen, onClose }) {
         {/* Links Grid */}
         <div className="space-y-1 mb-4">
           <button
+            onClick={() => navigateTo('/app/feed')}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-sm font-semibold transition-colors"
+          >
+            <Compass className="w-5 h-5 text-blue-500" />
+            <span>Campus Feed (All Posts)</span>
+          </button>
+
+          <button
             onClick={() => navigateTo('/app/leaderboard')}
             className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-200 text-sm font-semibold transition-colors"
           >
@@ -251,9 +260,9 @@ export default function AppShell() {
     if (user?.campus) socket.emit('join:campus', user.campus);
 
     socket.on('request:new', (req) => {
-      if (activeRole === 'carrier') {
-        prependToFeed(req);
-        toast(`📦 New errand: ${req.title}`, { duration: 3000 });
+      prependToFeed(req);
+      if (req.requester_id !== user?.id) {
+        toast(`📦 New errand posted: "${req.title}" (₹${req.reward})`, { duration: 3500 });
       }
     });
 

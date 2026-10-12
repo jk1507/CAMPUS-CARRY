@@ -32,7 +32,12 @@ const useAuthStore = create(
       },
 
       switchRole: (role) => set({ activeRole: role }),
-      logout: () => set({ token: null, user: null, activeRole: null }),
+      logout: () => {
+        try {
+          import('../socket/socket.js').then(({ disconnectSocket }) => disconnectSocket());
+        } catch {}
+        set({ token: null, user: null, activeRole: null });
+      },
       theme: 'system', // 'system' | 'light' | 'dark'
       setTheme: (theme) => {
         set({ theme });

@@ -12,7 +12,12 @@ export const initSockets = (io) => {
   io.on('connection', (socket) => {
     logger.info('Socket connected', { userId: socket.user.id, name: socket.user.name });
 
-    socket.on('join:campus',  (campus)    => socket.join(`campus:${campus}`));
+    socket.on('join:campus', (campus) => {
+      if (campus) {
+        socket.join(`campus:${campus}`);
+        socket.join(`campus:${campus.trim().toLowerCase()}`);
+      }
+    });
     socket.on('join:request', (requestId) => socket.join(`request:${requestId}`));
     socket.on('leave:request',(requestId) => socket.leave(`request:${requestId}`));
 

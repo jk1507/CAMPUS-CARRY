@@ -9,15 +9,31 @@ const router = express.Router();
 
 router.get('/feed', authenticate, async (req, res) => {
   try {
-    const { campus, limit = 20, offset = 0 } = req.query;
-    const [rows] = await pool.query(
-      `SELECT r.*, u.name as requester_name, u.avatar_url, u.rating as requester_rating
-       FROM requests r JOIN users u ON r.requester_id = u.id
-       WHERE r.status = 'open' AND r.campus = ? ORDER BY r.created_at DESC LIMIT ? OFFSET ?`,
-      [campus || req.user.campus, Number(limit), Number(offset)]
-    );
+    const { campus, limit = 50, offset = 0 } = req.query;
+    const targetCampus = (campus || req.user.campus || '').trim();
+
+    let query = `
+      SELECT r.*, u.name as requester_name, u.avatar_url, u.rating as requester_rating
+      FROM requests r 
+      JOIN users u ON r.requester_id = u.id
+      WHERE r.status = 'open'
+    `;
+    const params = [];
+
+    if (targetCampus) {
+      query += ` AND (LOWER(TRIM(r.campus)) = LOWER(?) OR r.campus IS NULL OR r.campus = '')`;
+      params.push(targetCampus);
+    }
+
+    query += ` ORDER BY r.created_at DESC LIMIT ? OFFSET ?`;
+    params.push(Number(limit), Number(offset));
+
+    const [rows] = await pool.query(query, params);
     return res.json({ success: true, data: rows });
-  } catch { return res.status(500).json({ success: false, error: 'Failed to fetch feed' }); }
+  } catch (err) { 
+    logger.error('Feed error', { err: err.message });
+    return res.status(500).json({ success: false, error: 'Failed to fetch feed' }); 
+  }
 });
 
 router.post('/', authenticate, validate(createRequestSchema), async (req, res) => {
@@ -45,7 +61,15 @@ router.post('/', authenticate, validate(createRequestSchema), async (req, res) =
       [result.insertId]
     );
     try {
-      req.app.get('io')?.to(`campus:${req.user.campus}`).emit('request:new', rows[0]);
+      const io = req.app.get('io');
+      if (io) {
+        if (req.user.campus) {
+          io.to(`campus:${req.user.campus.trim().toLowerCase()}`).emit('request:new', rows[0]);
+          io.to(`campus:${req.user.campus}`).emit('request:new', rows[0]);
+        }
+        // Also broadcast so any connected client can see live errands
+        io.emit('request:new', rows[0]);
+      }
     } catch (e) {
       logger.warn('Socket broadcast failed', { err: e.message });
     }

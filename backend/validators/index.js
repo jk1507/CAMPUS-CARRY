@@ -54,7 +54,10 @@ export const updateUserSchema = z.object({
   name:       z.string().min(2).max(80).optional(),
   campus:     z.string().min(2).max(100).optional(),
   bio:        z.string().max(300).optional().nullable(),
-  avatar_url: z.string().url('Must be a valid URL').optional().nullable(),
+  avatar_url: z.string().optional().nullable().refine(
+    (val) => !val || val.startsWith('http://') || val.startsWith('https://') || val.startsWith('data:image/'),
+    { message: 'Avatar must be a valid URL or data image' }
+  ),
 });
 
 export const reportSchema = z.object({

@@ -34,7 +34,19 @@ router.post('/login', authLimiter, validate(loginSchema), async (req, res) => {
     const user = rows[0];
     if (!await bcrypt.compare(password, user.password_hash)) return res.status(401).json({ success: false, error: 'Invalid credentials' });
     const token = jwt.sign({ id: user.id, email: user.email, role: user.role, campus: user.campus, name: user.name }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '7d' });
-    return res.json({ success: true, data: { token, role: user.role, name: user.name } });
+    return res.json({ 
+      success: true, 
+      data: { 
+        token, 
+        id: user.id,
+        name: user.name, 
+        email: user.email,
+        campus: user.campus,
+        role: user.role,
+        avatar_url: user.avatar_url,
+        rating: user.rating
+      } 
+    });
   } catch (err) { logger.error('Login error', { err }); return res.status(500).json({ success: false, error: 'Login failed' }); }
 });
 

@@ -243,7 +243,15 @@ function MoreBottomSheet({ isOpen, onClose }) {
 
 export default function AppShell() {
   const { user, fetchMe, activeRole } = useAuthStore();
-  const { prependToFeed, removeFromFeed, updateMyRequest } = useRequestStore();
+  const { 
+    prependToFeed, 
+    removeFromFeed, 
+    updateMyRequest, 
+    updateCarrying, 
+    updateCarrierBroadcast,
+    fetchMine,
+    fetchCarrying
+  } = useRequestStore();
   const [focusedRequest, setFocusedRequest] = useState(null);
   const [focusedAutoTab, setFocusedAutoTab] = useState('details');
   const [isMoreOpen, setIsMoreOpen] = useState(false);
@@ -257,7 +265,16 @@ export default function AppShell() {
   useEffect(() => {
     fetchMe();
     const socket = getSocket();
-    if (user?.campus) socket.emit('join:campus', user.campus);
+
+    const joinRooms = () => {
+      if (user?.campus) socket.emit('join:campus', user.campus);
+      if (user?.id) socket.emit('join:user', user.id);
+    };
+
+    if (socket.connected) {
+      joinRooms();
+    }
+    socket.on('connect', joinRooms);
 
     socket.on('request:new', (req) => {
       prependToFeed(req);
@@ -290,25 +307,54 @@ export default function AppShell() {
       toast(`💬 ${fromName}: ${message.slice(0, 40)}`, { duration: 4000 });
     });
 
-    socket.on('request:statusUpdate', async ({ status, requestId }) => {
-      if (status === 'delivered' && activeRole === 'requester') {
-        try {
-          const res = await client.get(`/requests/${requestId}`);
-          setFocusedAutoTab('feedback');
-          setFocusedRequest(res.data.data);
-          toast('⭐ Order delivered! Rate your carrier.', { duration: 5000 });
-        } catch {}
+    socket.on('request:statusUpdate', async ({ status, requestId, reward }) => {
+      updateMyRequest(requestId, { status });
+      updateCarrying(requestId, { status });
+
+      if (status === 'delivered') {
+        fetchMine();
+        fetchCarrying();
+        if (activeRole === 'requester') {
+          try {
+            const res = await client.get(`/requests/${requestId}`);
+            if (res.data.data?.requester_id === user?.id) {
+              setFocusedAutoTab('feedback');
+              setFocusedRequest(res.data.data);
+              toast.success('🎉 Order delivered! Rate your carrier.', { duration: 5000 });
+            }
+          } catch {}
+        } else if (activeRole === 'carrier') {
+          toast.success(`🎉 Delivery confirmed! ₹${reward || ''} added to earnings.`, { duration: 5000 });
+        }
+      }
+    });
+
+    socket.on('carrier:locationBroadcast', ({ requestId, address, lat, lng, carrierName, updatedAt }) => {
+      updateCarrierBroadcast(requestId, {
+        carrier_address: address,
+        carrier_lat: lat,
+        carrier_lng: lng,
+        carrier_updated_at: updatedAt,
+      });
+
+      if (activeRole === 'requester') {
+        toast(`📍 Carrier ${carrierName || ''} broadcasted location: "${address || 'Live GPS'}"`, {
+          icon: '🛵',
+          duration: 5000,
+        });
       }
     });
 
     return () => {
+      socket.off('connect', joinRooms);
       socket.off('request:new');
       socket.off('request:removeFromFeed');
       socket.off('request:accepted');
       socket.off('chat:notify');
       socket.off('request:statusUpdate');
+      socket.off('carrier:locationBroadcast');
     };
-  }, [user?.campus, activeRole]);
+  }, [user?.campus, user?.id, activeRole]);
 
   return (
     <div className="flex flex-col h-full bg-slate-50 dark:bg-[#090d16] overflow-hidden text-slate-900 dark:text-slate-100">

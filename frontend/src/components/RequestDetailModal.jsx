@@ -13,7 +13,8 @@ import {
   CheckCircle2, 
   Phone,
   User,
-  ArrowRight
+  ArrowRight,
+  Radio
 } from 'lucide-react';
 import useAuthStore from '../store/authStore.js';
 import useRequestStore from '../store/requestStore.js';
@@ -24,7 +25,7 @@ import toast from 'react-hot-toast';
 
 export default function RequestDetailModal({ request: init, onClose, onRefresh, autoTab }) {
   const { user, activeRole } = useAuthStore();
-  const { cancelRequest, updateStatus, acceptRequest } = useRequestStore();
+  const { cancelRequest, updateStatus, acceptRequest, broadcastCarrierAddress } = useRequestStore();
   const [request, setRequest] = useState(init);
   const [tab, setTab] = useState(autoTab || 'details'); // 'details' | 'chat' | 'location' | 'feedback'
   const [messages, setMessages] = useState([]);
@@ -39,6 +40,7 @@ export default function RequestDetailModal({ request: init, onClose, onRefresh, 
   const [deliveryOtpInput, setDeliveryOtpInput] = useState('');
   const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
   const [chatImageBase64, setChatImageBase64] = useState(null);
+  const [modalAddressInput, setModalAddressInput] = useState('');
 
   const chatEndRef = useRef(null);
   const locInterval = useRef(null);
@@ -77,6 +79,17 @@ export default function RequestDetailModal({ request: init, onClose, onRefresh, 
   }, [request.id]);
 
   useEffect(() => {
+    if (request.carrier_lat && request.carrier_lng) {
+      setCarrierLoc((prev) => prev || {
+        lat: Number(request.carrier_lat),
+        lng: Number(request.carrier_lng),
+        name: request.carrier_name || 'Carrier',
+        ts: request.carrier_updated_at,
+      });
+    }
+  }, [request.carrier_lat, request.carrier_lng]);
+
+  useEffect(() => {
     const socket = getSocket();
     socket.emit('join:request', request.id);
 
@@ -86,16 +99,32 @@ export default function RequestDetailModal({ request: init, onClose, onRefresh, 
       setTimeout(() => chatEndRef.current?.scrollIntoView({ behavior: 'smooth' }), 60);
     });
 
-    socket.on('location:update', (data) =>
-      setCarrierLoc({ lat: data.lat, lng: data.lng, name: data.name, ts: data.timestamp })
-    );
+    socket.on('location:update', (data) => {
+      setCarrierLoc({ lat: data.lat, lng: data.lng, name: data.name, ts: data.timestamp });
+      if (data.address) {
+        setRequest((r) => ({ ...r, carrier_address: data.address }));
+      }
+    });
+
+    socket.on('carrier:locationBroadcast', (data) => {
+      setRequest((r) => ({
+        ...r,
+        carrier_address: data.address,
+        carrier_lat: data.lat,
+        carrier_lng: data.lng,
+        carrier_updated_at: data.updatedAt,
+      }));
+      if (data.lat && data.lng) {
+        setCarrierLoc({ lat: data.lat, lng: data.lng, name: data.carrierName, ts: data.updatedAt });
+      }
+    });
 
     socket.on('request:statusUpdate', async ({ status }) => {
       setRequest((r) => ({ ...r, status }));
       onRefresh?.();
       if (status === 'in_progress') toast('📦 Errand item picked up!', { position: 'top-right' });
       if (status === 'delivered') {
-        toast('🏁 Handover complete! Rate your peer.', { position: 'top-right' });
+        toast.success('🏁 Handover complete! Rate your peer.', { position: 'top-right' });
         setTimeout(() => setTab('feedback'), 700);
         onRefresh?.();
       }
@@ -105,6 +134,7 @@ export default function RequestDetailModal({ request: init, onClose, onRefresh, 
       socket.emit('leave:request', request.id);
       socket.off('message:receive');
       socket.off('location:update');
+      socket.off('carrier:locationBroadcast');
       socket.off('request:statusUpdate');
       stopLoc();
     };
@@ -170,6 +200,10 @@ export default function RequestDetailModal({ request: init, onClose, onRefresh, 
       if (res.data.success) {
         toast.success('🎉 Delivery Confirmed & Handed Over!');
         setRequest((p) => ({ ...p, status: 'delivered' }));
+        useRequestStore.getState().updateCarrying(request.id, { status: 'delivered' });
+        useRequestStore.getState().updateMyRequest(request.id, { status: 'delivered' });
+        useRequestStore.getState().fetchCarrying();
+        useRequestStore.getState().fetchMine();
         onRefresh?.();
         setTimeout(() => setTab('feedback'), 700);
       } else {
@@ -179,6 +213,22 @@ export default function RequestDetailModal({ request: init, onClose, onRefresh, 
       toast.error(err.response?.data?.error || 'Verification failed');
     } finally {
       setIsVerifyingOtp(false);
+    }
+  };
+
+  const handleModalBroadcast = async (text) => {
+    if (!text?.trim()) return;
+    const res = await broadcastCarrierAddress(request.id, { address: text.trim() });
+    if (res.success) {
+      toast.success('📍 Broadcasted your address to the requester!');
+      setRequest((p) => ({
+        ...p,
+        carrier_address: text.trim(),
+        carrier_updated_at: new Date().toISOString(),
+      }));
+      setModalAddressInput('');
+    } else {
+      toast.error(res.error || 'Failed to broadcast address');
     }
   };
 
@@ -350,6 +400,55 @@ export default function RequestDetailModal({ request: init, onClose, onRefresh, 
                 </div>
               </div>
 
+              {/* Carrier Live Location Broadcast Banner */}
+              {request.carrier_address && (
+                <div 
+                  onClick={() => setTab('location')}
+                  className="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-500/15 via-teal-500/10 to-blue-500/15 border border-emerald-500/40 text-xs cursor-pointer hover:border-emerald-500 transition-all"
+                >
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <div className="flex items-center gap-1.5">
+                      <span className="relative flex h-2.5 w-2.5">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500" />
+                      </span>
+                      <span className="text-[10px] font-black uppercase tracking-wider text-emerald-800 dark:text-emerald-300">
+                        Carrier Live Location Broadcast
+                      </span>
+                    </div>
+                    <span className="text-[10px] text-slate-400">
+                      {request.carrier_updated_at ? formatDistanceToNow(new Date(request.carrier_updated_at), { addSuffix: true }) : 'Live'}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <MapPin className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0 animate-bounce" />
+                      <span className="font-extrabold text-xs text-slate-900 dark:text-white truncate">
+                        {request.carrier_address}
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 shrink-0">
+                      View on Map →
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Delivered Celebration Notice */}
+              {request.status === 'delivered' && (
+                <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-center space-y-1">
+                  <div className="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center mx-auto mb-2 shadow-sm">
+                    <CheckCircle2 className="w-6 h-6 stroke-[2.5]" />
+                  </div>
+                  <h3 className="font-black text-emerald-900 dark:text-emerald-300 text-sm">
+                    Delivery Complete & Verified 🎉
+                  </h3>
+                  <p className="text-xs text-emerald-700 dark:text-emerald-400">
+                    Handover confirmed with OTP • ₹{request.reward} payout released
+                  </p>
+                </div>
+              )}
+
               {request.description && (
                 <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/40 text-xs">
                   <span className="text-[10px] font-bold text-slate-400 uppercase block mb-0.5">Instructions</span>
@@ -378,7 +477,7 @@ export default function RequestDetailModal({ request: init, onClose, onRefresh, 
               )}
 
               {/* Carrier Handover OTP input box */}
-              {isCarrier && request.status === 'in_progress' && (
+              {isCarrier && (request.status === 'in_progress' || request.status === 'accepted') && (
                 <div className="p-4 rounded-2xl bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-800 text-center">
                   <p className="text-xs font-bold text-blue-700 dark:text-blue-300 mb-1">
                     Enter Requester's 4-Digit OTP
@@ -495,20 +594,65 @@ export default function RequestDetailModal({ request: init, onClose, onRefresh, 
           {/* TAB 3: LOCATION */}
           {tab === 'location' && (
             <div className="space-y-3">
-              {isCarrier && (
-                <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 text-xs flex items-center justify-between">
-                  <div>
-                    <p className="font-bold text-slate-900 dark:text-white">Broadcast GPS Location</p>
-                    <p className="text-[11px] text-slate-400">Updates position every 5 sec</p>
+              {/* Broadcasted Address Banner */}
+              {request.carrier_address && (
+                <div className="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-500/15 via-teal-500/10 to-blue-500/15 border border-emerald-500/40 text-xs space-y-1">
+                  <div className="flex items-center justify-between">
+                    <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-800 dark:text-emerald-300 flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                      Carrier Live Location Broadcast
+                    </span>
+                    {request.carrier_updated_at && (
+                      <span className="text-[10px] text-slate-400">
+                        {formatDistanceToNow(new Date(request.carrier_updated_at), { addSuffix: true })}
+                      </span>
+                    )}
                   </div>
-                  <button
-                    onClick={sharingLoc ? stopLoc : startLoc}
-                    className={`px-3 py-1.5 rounded-xl font-bold text-xs ${
-                      sharingLoc ? 'bg-rose-600 text-white' : 'bg-emerald-600 text-white'
-                    }`}
-                  >
-                    {sharingLoc ? 'Stop' : 'Share GPS'}
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <MapPin className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                    <span className="font-extrabold text-sm text-slate-900 dark:text-white">
+                      {request.carrier_address}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Carrier Location Broadcasting Controls */}
+              {isCarrier && (
+                <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 text-xs space-y-2.5">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="font-bold text-slate-900 dark:text-white">Broadcast Address / GPS</p>
+                      <p className="text-[11px] text-slate-400">Updates position in requester's section</p>
+                    </div>
+                    <button
+                      onClick={sharingLoc ? stopLoc : startLoc}
+                      className={`px-3 py-1.5 rounded-xl font-bold text-xs ${
+                        sharingLoc ? 'bg-rose-600 text-white' : 'bg-emerald-600 text-white'
+                      }`}
+                    >
+                      {sharingLoc ? 'Stop GPS' : 'Share Live GPS'}
+                    </button>
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={modalAddressInput}
+                      onChange={(e) => setModalAddressInput(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleModalBroadcast(modalAddressInput)}
+                      placeholder="e.g. Near Library Gate 2, Canteen, Block A..."
+                      className="flex-1 bg-white dark:bg-slate-700 rounded-xl px-3 py-2 text-xs border border-slate-200 dark:border-slate-600 text-slate-900 dark:text-white focus:outline-none"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => handleModalBroadcast(modalAddressInput)}
+                      disabled={!modalAddressInput.trim()}
+                      className="px-3.5 py-2 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white text-xs font-bold shrink-0"
+                    >
+                      Broadcast
+                    </button>
+                  </div>
                 </div>
               )}
 
@@ -525,17 +669,24 @@ export default function RequestDetailModal({ request: init, onClose, onRefresh, 
                 <span>Open Google Maps Turn-by-Turn</span>
               </a>
 
-              {carrierLoc && (
+              {(carrierLoc || (request.carrier_lat && request.carrier_lng)) ? (
                 <div className="h-48 rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-800">
                   <LiveMap
-                    carrierLat={Number(carrierLoc.lat)}
-                    carrierLng={Number(carrierLoc.lng)}
-                    carrierName={carrierLoc.name}
+                    carrierLat={Number(carrierLoc?.lat || request.carrier_lat)}
+                    carrierLng={Number(carrierLoc?.lng || request.carrier_lng)}
+                    carrierName={carrierLoc?.name || request.carrier_name || 'Carrier'}
                     requesterLat={requesterLoc?.lat}
                     requesterLng={requesterLoc?.lng}
                     requesterName={isRequester ? user?.name : request.requester_name}
                   />
                 </div>
+              ) : (
+                !isCarrier && (
+                  <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-200 dark:border-slate-800 text-center text-xs text-slate-500">
+                    <MapPin className="w-6 h-6 mx-auto mb-1 text-slate-400 opacity-60" />
+                    <span>Carrier has not shared their GPS location or address yet.</span>
+                  </div>
+                )
               )}
             </div>
           )}

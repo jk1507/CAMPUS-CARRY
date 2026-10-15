@@ -61,6 +61,39 @@ const useRequestStore = create((set) => ({
   })),
   removeFromFeed: (id) => set(s => ({ feed: s.feed.filter(r => r.id !== id) })),
   updateMyRequest: (id, patch) => set(s => ({ myRequests: s.myRequests.map(r => r.id === id ? { ...r, ...patch } : r) })),
+  updateCarrying: (id, patch) => set(s => ({ carrying: s.carrying.map(r => r.id === id ? { ...r, ...patch } : r) })),
+  updateCarrierBroadcast: (requestId, patch) => set(s => ({
+    myRequests: s.myRequests.map(r => r.id === requestId ? { ...r, ...patch } : r),
+    carrying: s.carrying.map(r => r.id === requestId ? { ...r, ...patch } : r),
+  })),
+  broadcastCarrierAddress: async (requestId, payload) => {
+    try {
+      const res = await client.post(`/requests/${requestId}/broadcast-address`, payload);
+      if (res.data?.success) {
+        const d = res.data.data;
+        set(s => ({
+          carrying: s.carrying.map(r => r.id === requestId ? {
+            ...r,
+            carrier_address: d.address,
+            carrier_lat: d.lat,
+            carrier_lng: d.lng,
+            carrier_updated_at: d.updatedAt
+          } : r),
+          myRequests: s.myRequests.map(r => r.id === requestId ? {
+            ...r,
+            carrier_address: d.address,
+            carrier_lat: d.lat,
+            carrier_lng: d.lng,
+            carrier_updated_at: d.updatedAt
+          } : r),
+        }));
+        return { success: true, data: d };
+      }
+      return { success: false, error: res.data?.error || 'Failed to broadcast' };
+    } catch (err) {
+      return { success: false, error: err.response?.data?.error || err.message || 'Failed to broadcast' };
+    }
+  },
 }));
 
 export default useRequestStore;

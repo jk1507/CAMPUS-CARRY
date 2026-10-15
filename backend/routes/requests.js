@@ -83,19 +83,25 @@ router.post('/', authenticate, validate(createRequestSchema), async (req, res) =
 // Campus Carrier Leaderboard & Badges
 router.get('/leaderboard', authenticate, async (req, res) => {
   try {
-    const campus = req.query.campus || req.user.campus;
-    const [rows] = await pool.query(
-      `SELECT u.id, u.name, u.avatar_url, u.rating,
-              COUNT(r.id) as completed_deliveries,
-              COALESCE(SUM(r.reward), 0) as total_earnings
-       FROM users u
-       LEFT JOIN requests r ON u.id = r.carrier_id AND r.status = 'delivered'
-       WHERE u.campus = ?
-       GROUP BY u.id
-       ORDER BY completed_deliveries DESC, total_earnings DESC, u.rating DESC
-       LIMIT 10`,
-      [campus]
-    );
+    const campus = (req.query.campus || req.user.campus || '').trim();
+    let query = `
+      SELECT u.id, u.name, u.avatar_url, u.rating,
+             COUNT(r.id) as completed_deliveries,
+             COALESCE(SUM(r.reward), 0) as total_earnings
+      FROM users u
+      LEFT JOIN requests r ON u.id = r.carrier_id AND r.status = 'delivered'
+    `;
+    const params = [];
+    if (campus) {
+      query += ` WHERE LOWER(TRIM(u.campus)) = LOWER(?)`;
+      params.push(campus);
+    }
+    query += `
+      GROUP BY u.id, u.name, u.avatar_url, u.rating
+      ORDER BY completed_deliveries DESC, total_earnings DESC, u.rating DESC
+      LIMIT 10
+    `;
+    const [rows] = await pool.query(query, params);
     return res.json({ success: true, data: rows });
   } catch (err) {
     logger.error('Leaderboard error', { err: err.message });
@@ -213,11 +219,25 @@ router.post('/:id/verify-otp', authenticate, async (req, res) => {
       ['delivered', proof_photo || null, requestId]
     );
 
-    req.app.get('io')?.to(`request:${requestId}`).emit('request:statusUpdate', {
+    const io = req.app.get('io');
+    const statusPayload = {
       status: 'delivered',
       requestId,
+      requesterId: reqData.requester_id,
+      carrierId: reqData.carrier_id,
       proof_photo: proof_photo || null,
-    });
+      reward: reqData.reward,
+      title: reqData.title,
+    };
+
+    if (io) {
+      io.to(`request:${requestId}`).emit('request:statusUpdate', statusPayload);
+      io.to(`user:${reqData.requester_id}`).emit('request:statusUpdate', statusPayload);
+      io.to(`user:${reqData.carrier_id}`).emit('request:statusUpdate', statusPayload);
+      if (reqData.campus) {
+        io.to(`campus:${reqData.campus}`).emit('request:statusUpdate', statusPayload);
+      }
+    }
 
     return res.json({
       success: true,
@@ -226,6 +246,78 @@ router.post('/:id/verify-otp', authenticate, async (req, res) => {
   } catch (err) {
     logger.error('Verify OTP error', { err: err.message });
     return res.status(500).json({ success: false, error: err.message || 'Verification failed' });
+  }
+});
+
+// Broadcast carrier address / live location to the requester
+router.post('/:id/broadcast-address', authenticate, async (req, res) => {
+  try {
+    const requestId = Number(req.params.id);
+    const { address, lat, lng } = req.body;
+
+    if (!address && lat === undefined) {
+      return res.status(400).json({ success: false, error: 'Address or coordinates are required' });
+    }
+
+    const [rows] = await pool.query('SELECT * FROM requests WHERE id = ?', [requestId]);
+    if (!rows.length) return res.status(404).json({ success: false, error: 'Request not found' });
+
+    const reqData = rows[0];
+    if (reqData.carrier_id !== req.user.id) {
+      return res.status(403).json({ success: false, error: 'Only the assigned carrier can broadcast location' });
+    }
+
+    const trimmedAddress = (address || '').trim() || null;
+    const now = new Date().toISOString().slice(0, 19).replace('T', ' ');
+
+    await pool.query(
+      `UPDATE requests 
+       SET carrier_address = ?, carrier_lat = ?, carrier_lng = ?, carrier_updated_at = ? 
+       WHERE id = ?`,
+      [
+        trimmedAddress,
+        lat !== undefined && lat !== null ? Number(lat) : null,
+        lng !== undefined && lng !== null ? Number(lng) : null,
+        now,
+        requestId
+      ]
+    );
+
+    // Also update locations table if coordinates provided
+    if (lat !== undefined && lat !== null && lng !== undefined && lng !== null) {
+      await pool.query(
+        `INSERT INTO locations (user_id, lat, lng, request_id) VALUES (?, ?, ?, ?) 
+         ON DUPLICATE KEY UPDATE lat=VALUES(lat), lng=VALUES(lng), updated_at=NOW()`,
+        [req.user.id, Number(lat), Number(lng), requestId]
+      ).catch(() => {});
+    }
+
+    const io = req.app.get('io');
+    const broadcastPayload = {
+      requestId,
+      carrierId: req.user.id,
+      carrierName: req.user.name,
+      address: trimmedAddress,
+      lat: lat !== undefined && lat !== null ? Number(lat) : null,
+      lng: lng !== undefined && lng !== null ? Number(lng) : null,
+      updatedAt: new Date().toISOString(),
+    };
+
+    if (io) {
+      io.to(`request:${requestId}`).emit('carrier:locationBroadcast', broadcastPayload);
+      io.to(`user:${reqData.requester_id}`).emit('carrier:locationBroadcast', broadcastPayload);
+      if (reqData.campus) {
+        io.to(`campus:${reqData.campus}`).emit('carrier:locationBroadcast', broadcastPayload);
+      }
+    }
+
+    return res.json({
+      success: true,
+      data: broadcastPayload,
+    });
+  } catch (err) {
+    logger.error('Broadcast address error', { err: err.message });
+    return res.status(500).json({ success: false, error: err.message || 'Failed to broadcast address' });
   }
 });
 
@@ -247,7 +339,23 @@ router.patch('/:id/status', authenticate, validate(updateStatusSchema), async (r
     const r = rows[0];
     if (r.requester_id !== req.user.id && r.carrier_id !== req.user.id) return res.status(403).json({ success: false, error: 'Not authorized' });
     await pool.query('UPDATE requests SET status = ? WHERE id = ?', [status, req.params.id]);
-    req.app.get('io').to(`request:${req.params.id}`).emit('request:statusUpdate', { status, requestId: Number(req.params.id) });
+
+    const io = req.app.get('io');
+    const statusPayload = {
+      status,
+      requestId: Number(req.params.id),
+      requesterId: r.requester_id,
+      carrierId: r.carrier_id,
+      reward: r.reward,
+      title: r.title,
+    };
+
+    if (io) {
+      io.to(`request:${req.params.id}`).emit('request:statusUpdate', statusPayload);
+      io.to(`user:${r.requester_id}`).emit('request:statusUpdate', statusPayload);
+      if (r.carrier_id) io.to(`user:${r.carrier_id}`).emit('request:statusUpdate', statusPayload);
+      if (r.campus) io.to(`campus:${r.campus}`).emit('request:statusUpdate', statusPayload);
+    }
     return res.json({ success: true, data: { status } });
   } catch { return res.status(500).json({ success: false, error: 'Failed to update status' }); }
 });

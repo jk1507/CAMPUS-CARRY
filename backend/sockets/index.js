@@ -12,6 +12,15 @@ export const initSockets = (io) => {
   io.on('connection', (socket) => {
     logger.info('Socket connected', { userId: socket.user.id, name: socket.user.name });
 
+    // Automatically join user's own private room for direct notifications
+    if (socket.user?.id) {
+      socket.join(`user:${socket.user.id}`);
+    }
+
+    socket.on('join:user', (userId) => {
+      if (userId) socket.join(`user:${userId}`);
+    });
+
     socket.on('join:campus', (campus) => {
       if (campus) {
         socket.join(`campus:${campus}`);
@@ -19,14 +28,39 @@ export const initSockets = (io) => {
       }
     });
     socket.on('join:request', (requestId) => socket.join(`request:${requestId}`));
-    socket.on('leave:request',(requestId) => socket.leave(`request:${requestId}`));
+    socket.on('leave:request', (requestId) => socket.leave(`request:${requestId}`));
 
-    socket.on('location:send', ({ lat, lng, requestId }) => {
+    socket.on('location:send', ({ lat, lng, requestId, address, role }) => {
+      const payload = {
+        userId: socket.user.id,
+        name: socket.user.name,
+        role: role || socket.user.role || 'peer',
+        lat,
+        lng,
+        address: address || null,
+        timestamp: new Date().toISOString(),
+      };
       if (requestId) {
-        socket.to(`request:${requestId}`).emit('location:update', {
-          userId: socket.user.id, name: socket.user.name, lat, lng, timestamp: new Date().toISOString(),
-        });
+        socket.to(`request:${requestId}`).emit('location:update', payload);
       }
+      if (socket.user?.campus) {
+        socket.to(`campus:${socket.user.campus}`).emit('location:update', payload);
+        socket.to(`campus:${socket.user.campus.trim().toLowerCase()}`).emit('location:update', payload);
+      }
+    });
+
+    socket.on('carrier:broadcastLocation', ({ requestId, requesterId, address, lat, lng }) => {
+      const payload = {
+        requestId,
+        carrierId: socket.user.id,
+        carrierName: socket.user.name,
+        address,
+        lat,
+        lng,
+        updatedAt: new Date().toISOString(),
+      };
+      if (requestId) io.to(`request:${requestId}`).emit('carrier:locationBroadcast', payload);
+      if (requesterId) io.to(`user:${requesterId}`).emit('carrier:locationBroadcast', payload);
     });
 
     socket.on('message:send', ({ requestId, message, imageUrl }) => {

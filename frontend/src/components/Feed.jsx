@@ -23,8 +23,8 @@ export default function Feed() {
   const [selectedFilter, setSelectedFilter] = useState('all'); // 'all' | 'high_reward' | 'urgent'
 
   useEffect(() => {
-    fetchFeed(user?.campus);
-  }, [user?.campus]);
+    fetchFeed();
+  }, []);
 
   const handleAccept = async (id) => {
     const r = await acceptRequest(id);
@@ -39,7 +39,8 @@ export default function Feed() {
     const matchesSearch =
       req.title.toLowerCase().includes(searchFilter.toLowerCase()) ||
       req.pickup_location.toLowerCase().includes(searchFilter.toLowerCase()) ||
-      req.dropoff_location.toLowerCase().includes(searchFilter.toLowerCase());
+      req.dropoff_location.toLowerCase().includes(searchFilter.toLowerCase()) ||
+      (req.campus && req.campus.toLowerCase().includes(searchFilter.toLowerCase()));
 
     if (!matchesSearch) return false;
 
@@ -64,7 +65,7 @@ export default function Feed() {
             </span>
           </div>
           <button
-            onClick={() => fetchFeed(user?.campus)}
+            onClick={() => fetchFeed()}
             disabled={isLoading}
             className="p-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white transition-all active:scale-95"
             title="Refresh feed"
@@ -74,10 +75,10 @@ export default function Feed() {
         </div>
 
         <h2 className="text-lg sm:text-xl font-extrabold mt-2">
-          {user?.campus || 'Campus'} Deliveries
+          Available Deliveries
         </h2>
         <p className="text-blue-100 text-xs mt-0.5">
-          Pick up errands along your route between classes and earn cash tips.
+          Pick up errands along your route and earn cash tips.
         </p>
       </div>
 

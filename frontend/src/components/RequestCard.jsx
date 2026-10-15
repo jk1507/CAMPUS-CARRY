@@ -48,13 +48,18 @@ export default function RequestCard({
       onClick={() => onView?.(request)}
       className="bg-white dark:bg-[#111827] border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 sm:p-5 shadow-sm hover:shadow-md transition-all active:scale-[0.99] cursor-pointer"
     >
-      {/* Top Header: Status Pill + Time-ago + Reward */}
+      {/* Top Header: Status Pill + Campus + Time-ago + Reward */}
       <div className="flex items-center justify-between gap-3 mb-2.5">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap">
           <span className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${sc.className}`}>
             <span className={`w-1.5 h-1.5 rounded-full ${sc.dot}`} />
             {sc.label}
           </span>
+          {request.campus && (
+            <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300">
+              {request.campus}
+            </span>
+          )}
           <span className="text-[11px] text-slate-400 dark:text-slate-500">
             {request.created_at
               ? formatDistanceToNow(new Date(request.created_at), { addSuffix: true })

@@ -21,8 +21,19 @@ router.post('/register', authLimiter, validate(registerSchema), async (req, res)
       [name, email, hash, campus, role || 'requester', phone || null]
     );
     const token = jwt.sign({ id: result.insertId, email, role: role || 'requester', campus, name }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '7d' });
-    logger.info('User registered', { userId: result.insertId });
-    return res.status(201).json({ success: true, data: { token, role: role || 'requester', name } });
+    return res.status(201).json({ 
+      success: true, 
+      data: { 
+        token, 
+        id: result.insertId,
+        name, 
+        email, 
+        campus, 
+        role: role || 'requester', 
+        rating: null,
+        avatar_url: null
+      } 
+    });
   } catch (err) { logger.error('Register error', { err }); return res.status(500).json({ success: false, error: 'Registration failed' }); }
 });
 

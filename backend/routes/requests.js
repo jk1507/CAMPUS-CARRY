@@ -17,18 +17,10 @@ router.get('/feed', authenticate, async (req, res) => {
       FROM requests r 
       JOIN users u ON r.requester_id = u.id
       WHERE r.status = 'open'
+      ORDER BY r.created_at DESC LIMIT ? OFFSET ?
     `;
-    const params = [];
 
-    if (targetCampus) {
-      query += ` AND (LOWER(TRIM(r.campus)) = LOWER(?) OR r.campus IS NULL OR r.campus = '')`;
-      params.push(targetCampus);
-    }
-
-    query += ` ORDER BY r.created_at DESC LIMIT ? OFFSET ?`;
-    params.push(Number(limit), Number(offset));
-
-    const [rows] = await pool.query(query, params);
+    const [rows] = await pool.query(query, [Number(limit), Number(offset)]);
     return res.json({ success: true, data: rows });
   } catch (err) { 
     logger.error('Feed error', { err: err.message });

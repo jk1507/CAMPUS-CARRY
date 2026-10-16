@@ -202,8 +202,14 @@ export default function LandingPage() {
       </main>
 
       {/* Footer */}
-      <footer className="w-full py-6 border-t border-slate-200 dark:border-slate-800 text-center text-xs text-slate-500 dark:text-slate-400">
+      <footer className="w-full py-6 border-t border-slate-200 dark:border-slate-800 text-center text-xs text-slate-500 dark:text-slate-400 flex flex-col sm:flex-row items-center justify-between px-6 max-w-4xl mx-auto gap-2">
         <p>© 2026 Zipp Campus Delivery. Built for college peer networks.</p>
+        <button
+          onClick={() => navigate('/admin')}
+          className="text-[11px] font-semibold text-slate-400 dark:text-slate-600 hover:text-rose-500 dark:hover:text-rose-400 transition-colors"
+        >
+          Administrator Portal
+        </button>
       </footer>
     </div>
   );

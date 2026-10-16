@@ -1,12 +1,27 @@
 import { z } from 'zod';
 
+// Strict RFC-compliant email regex ensuring proper username, @, domain, and top-level domain (e.g. .com, .edu, .in)
+const STRICT_EMAIL_REGEX = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+
 export const registerSchema = z.object({
-  name:       z.string().min(2, 'Name must be at least 2 characters').max(80),
-  email:      z.string().email('Invalid email address').max(150),
-  password:   z.string().min(6, 'Password must be at least 6 characters').max(128),
-  campus:     z.string().min(2, 'Campus is required').max(100),
-  role:       z.enum(['requester', 'carrier']).optional().default('requester'),
-  phone:      z.string().max(15).optional().nullable(),
+  name: z.string().trim().min(2, 'Name must be at least 2 characters').max(80),
+  email: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .max(150, 'Email cannot exceed 150 characters')
+    .regex(STRICT_EMAIL_REGEX, 'Please enter a valid email address (e.g. student@campus.edu or name@gmail.com)'),
+  password: z
+    .string()
+    .min(8, 'Password must be at least 8 characters long')
+    .max(128, 'Password cannot exceed 128 characters')
+    .regex(/[A-Z]/, 'Password must contain at least one uppercase letter (A-Z)')
+    .regex(/[a-z]/, 'Password must contain at least one lowercase letter (a-z)')
+    .regex(/[0-9]/, 'Password must contain at least one number (0-9)')
+    .regex(/[^A-Za-z0-9]/, 'Password must contain at least one special character (!@#$%^&*...)'),
+  campus: z.string().trim().min(2, 'Campus name is required').max(100),
+  role: z.enum(['requester', 'carrier']).optional().default('requester'),
+  phone: z.string().trim().max(15).optional().nullable(),
 });
 
 export const loginSchema = z.object({

@@ -23,6 +23,7 @@ import reportsRoutes        from './routes/reports.js';
 import notificationsRoutes  from './routes/notifications.js';
 import withdrawalsRoutes    from './routes/withdrawals.js';
 import fcmRoutes            from './routes/fcm.js';
+import adminRoutes          from './routes/admin.js';
 
 const app    = express();
 const server = http.createServer(app);
@@ -68,6 +69,7 @@ app.use('/api/reports',        reportsRoutes);
 app.use('/api/notifications',  notificationsRoutes);
 app.use('/api/withdrawals',    withdrawalsRoutes);
 app.use('/api/fcm',            fcmRoutes);
+app.use('/api/admin',          adminRoutes);
 
 app.get('/api/health', async (req, res) => {
   try { await pool.query('SELECT 1'); return res.json({ success: true, data: { status: 'ok' } }); }

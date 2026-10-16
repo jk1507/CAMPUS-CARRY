@@ -43,6 +43,9 @@ router.post('/login', authLimiter, validate(loginSchema), async (req, res) => {
     const [rows] = await pool.query('SELECT * FROM users WHERE email = ?', [email]);
     if (rows.length === 0) return res.status(401).json({ success: false, error: 'Invalid credentials' });
     const user = rows[0];
+    if (user.is_banned) {
+      return res.status(403).json({ success: false, error: 'Your account has been suspended by the administrator.' });
+    }
     if (!await bcrypt.compare(password, user.password_hash)) return res.status(401).json({ success: false, error: 'Invalid credentials' });
     const token = jwt.sign({ id: user.id, email: user.email, role: user.role, campus: user.campus, name: user.name }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN || '7d' });
     return res.json({ 

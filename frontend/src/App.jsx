@@ -5,6 +5,7 @@ import useAuthStore from './store/authStore.js';
 import LandingPage from './pages/LandingPage.jsx';
 import AuthPage from './pages/AuthPage.jsx';
 import AppShell from './pages/AppShell.jsx';
+import AdminPage from './pages/AdminPage.jsx';
 
 const PrivateRoute = ({ children }) => {
   const token = useAuthStore(s => s.token);
@@ -31,9 +32,10 @@ export default function App() {
         success: { iconTheme: { primary: '#a78bfa', secondary: '#1e293b' } },
       }}/>
       <Routes>
-        <Route path="/"     element={<LandingPage />} />
-        <Route path="/auth" element={<AuthPage />} />
-        <Route path="/app/*" element={<PrivateRoute><AppShell /></PrivateRoute>} />
+        <Route path="/"        element={<LandingPage />} />
+        <Route path="/auth"    element={<AuthPage />} />
+        <Route path="/admin"   element={<AdminPage />} />
+        <Route path="/app/*"   element={<PrivateRoute><AppShell /></PrivateRoute>} />
       </Routes>
     </BrowserRouter>
   );
